@@ -394,11 +394,11 @@ void CScriptSpecialFunction::AcceptScriptMsg(EScriptObjectMessage msg, TUniqueId
     case ESpecialFunction::RedundantHintSystem: {
       CHintOptions& hintOptions = g_GameState->HintOptions();
       if (msg == EScriptObjectMessage::Action)
-        hintOptions.ActivateContinueDelayHintTimer(xec_locatorName.c_str());
+        hintOptions.ActivateContinueDelayHintTimer(xec_locatorName);
       else if (msg == EScriptObjectMessage::Increment)
-        hintOptions.ActivateImmediateHintTimer(xec_locatorName.c_str());
+        hintOptions.ActivateImmediateHintTimer(xec_locatorName);
       else if (msg == EScriptObjectMessage::Decrement)
-        hintOptions.DelayHint(xec_locatorName.c_str());
+        hintOptions.DelayHint(xec_locatorName);
       break;
     }
     case ESpecialFunction::Billboard: {

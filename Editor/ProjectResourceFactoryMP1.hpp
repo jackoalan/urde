@@ -4,7 +4,6 @@
 #include "Runtime/CToken.hpp"
 
 namespace urde {
-class MP1OriginalIDs;
 class CSimplePool;
 
 class ProjectResourceFactoryMP1 : public ProjectResourceFactoryBase {

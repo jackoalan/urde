@@ -577,7 +577,7 @@ const CHintOptions::SHintState* CHintOptions::GetCurrentDisplayedHint() const {
   return nullptr;
 }
 
-void CHintOptions::DelayHint(const char* name) {
+void CHintOptions::DelayHint(std::string_view name) {
   int idx = CGameHintInfo::FindHintIndex(name);
   if (idx == -1)
     return;
@@ -589,7 +589,7 @@ void CHintOptions::DelayHint(const char* name) {
   x0_hintStates[idx].x0_state = EHintState::Delayed;
 }
 
-void CHintOptions::ActivateImmediateHintTimer(const char* name) {
+void CHintOptions::ActivateImmediateHintTimer(std::string_view name) {
   int idx = CGameHintInfo::FindHintIndex(name);
   if (idx == -1)
     return;
@@ -603,7 +603,7 @@ void CHintOptions::ActivateImmediateHintTimer(const char* name) {
   hintState.x4_time = hint.GetImmediateTime();
 }
 
-void CHintOptions::ActivateContinueDelayHintTimer(const char* name) {
+void CHintOptions::ActivateContinueDelayHintTimer(std::string_view name) {
   int idx = x10_nextHintIdx;
   if (idx != 0)
     idx = CGameHintInfo::FindHintIndex(name);

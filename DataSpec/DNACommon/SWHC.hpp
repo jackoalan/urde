@@ -16,48 +16,74 @@ class ProjectPath;
 namespace DataSpec::DNAParticle {
 
 template <class IDType>
-struct SWSH : public BigDNA {
-  AT_DECL_EXPLICIT_DNA_YAML
-  AT_SUBDECL_DNA
-
-  IntElementFactory x0_PSLT;
-  RealElementFactory x4_TIME;
-  RealElementFactory x8_LRAD;
-  RealElementFactory xc_RRAD;
-  IntElementFactory x10_LENG;
-  ColorElementFactory x14_COLR;
-  IntElementFactory x18_SIDE;
-  RealElementFactory x1c_IROT;
-  RealElementFactory x20_ROTM;
-  VectorElementFactory x24_POFS;
-  VectorElementFactory x28_IVEL;
-  VectorElementFactory x2c_NPOS;
-  ModVectorElementFactory x30_VELM;
-  ModVectorElementFactory x34_VLM2;
-  IntElementFactory x38_SPLN;
-  UVElementFactory<IDType> x3c_TEXR;
-  IntElementFactory x40_TSPN;
-  union {
-    struct {
-      bool x44_24_LLRD : 1;
-      bool x44_25_CROS : 1;
-      bool x44_26_VLS1 : 1;
-      bool x44_27_VLS2 : 1;
-      bool x44_28_SROT : 1;
-      bool x44_29_WIRE : 1;
-      bool x44_30_TEXW : 1;
-      bool x44_31_AALP : 1;
-      bool x45_24_ZBUF : 1;
-      bool x45_25_ORNT : 1;
-      bool x45_26_CRND : 1;
-    };
-    uint16_t dummy = 0;
+struct _SWSH {
+  enum EPP : uint32_t {
+    PSLT = SBIG('PSLT'), // x0
+    TIME = SBIG('TIME'), // x4
+    LRAD = SBIG('LRAD'), // x8
+    RRAD = SBIG('RRAD'), // xc
+    LENG = SBIG('LENG'), // x10
+    COLR = SBIG('COLR'), // x14
+    SIDE = SBIG('SIDE'), // x18
+    IROT = SBIG('IROT'), // x1c
+    ROTM = SBIG('ROTM'), // x20
+    POFS = SBIG('POFS'), // x24
+    IVEL = SBIG('IVEL'), // x28
+    NPOS = SBIG('NPOS'), // x2c
+    VELM = SBIG('VELM'), // x30
+    VLM2 = SBIG('VLM2'), // x34
+    SPLN = SBIG('SPLN'), // x38
+    TEXR = SBIG('TEXR'), // x3c
+    TSPN = SBIG('TSPN'), // x40
+    LLRD = SBIG('LLRD'), // x44_24
+    CROS = SBIG('CROS'), // x44_25
+    VLS1 = SBIG('VLS1'), // x44_26
+    VLS2 = SBIG('VLS2'), // x44_27
+    SROT = SBIG('SROT'), // x44_28
+    WIRE = SBIG('WIRE'), // x44_29
+    TEXW = SBIG('TEXW'), // x44_30
+    AALP = SBIG('AALP'), // x44_31
+    ZBUF = SBIG('ZBUF'), // x45_24
+    ORNT = SBIG('ORNT'), // x45_25
+    CRND = SBIG('CRND'), // x45_26
   };
-
-  SWSH() { x44_25_CROS = true; }
-
-  void gatherDependencies(std::vector<hecl::ProjectPath>&) const;
+  using Properties = PPSet<
+      ParticleType::SWSH,
+      std::tuple<
+          PP<PSLT, IntElementFactory>,
+          PP<TIME, RealElementFactory>,
+          PP<LRAD, RealElementFactory>,
+          PP<RRAD, RealElementFactory>,
+          PP<LENG, IntElementFactory>,
+          PP<COLR, ColorElementFactory>,
+          PP<SIDE, IntElementFactory>,
+          PP<IROT, RealElementFactory>,
+          PP<ROTM, RealElementFactory>,
+          PP<POFS, VectorElementFactory>,
+          PP<IVEL, VectorElementFactory>,
+          PP<NPOS, VectorElementFactory>,
+          PP<VELM, ModVectorElementFactory>,
+          PP<VLM2, ModVectorElementFactory>,
+          PP<SPLN, IntElementFactory>,
+          PP<TEXR, UVElementFactory<IDType>>,
+          PP<TSPN, IntElementFactory>,
+          PP<LLRD, bool>,
+          PP<CROS, bool, true>,
+          PP<VLS1, bool>,
+          PP<VLS2, bool>,
+          PP<SROT, bool>,
+          PP<WIRE, bool>,
+          PP<TEXW, bool>,
+          PP<AALP, bool>,
+          PP<ZBUF, bool>,
+          PP<ORNT, bool>,
+          PP<CRND, bool>>,
+      AALP, COLR, CRND, CROS, IROT, IVEL, LENG, LLRD, LRAD, NPOS, ORNT, POFS, PSLT, ROTM, RRAD, SIDE, SPLN, SROT,
+      TEXR, TEXW, TIME, TSPN, VELM, VLM2, VLS1, VLS2, WIRE, ZBUF>;
 };
+
+template <class IDType>
+using SWSH = PPImpl<_SWSH<IDType>>;
 
 template <class IDType>
 bool ExtractSWSH(PAKEntryReadStream& rs, const hecl::ProjectPath& outPath);

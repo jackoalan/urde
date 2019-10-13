@@ -207,7 +207,7 @@ void STRG::Enumerate<BigDNA::BinarySize>(size_t& __isz) {
 template <>
 void STRG::Enumerate<BigDNA::WriteYaml>(athena::io::YAMLDocWriter& writer) {
   for (const auto& item : langs) {
-    if (auto v = writer.enterSubVector(item.first.toString()))
+    if (auto v = writer.enterSubVector(item.first.toStringView()))
       for (const std::string& str : item.second)
         writer.writeString(str);
   }

@@ -857,7 +857,7 @@ static void WriteTag(athena::io::YAMLDocWriter& cacheWriter, const urde::SObject
   if (auto* existing = cacheWriter.getCurNode()->findMapChild(key)) {
     existing->m_seqChildren.emplace_back(athena::io::ValToNode(path.getEncodableStringUTF8()));
   } else if (auto v = cacheWriter.enterSubVector(key)) {
-    cacheWriter.writeString(pathTag.type.toString());
+    cacheWriter.writeString(pathTag.type.toStringView());
     cacheWriter.writeString(path.getEncodableStringUTF8());
   }
 }

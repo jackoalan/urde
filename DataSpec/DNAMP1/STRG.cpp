@@ -448,7 +448,7 @@ void STRG::Enumerate<BigDNA::ReadYaml>(typename ReadYaml::StreamT& reader) {
 template <>
 void STRG::Enumerate<BigDNA::WriteYaml>(typename WriteYaml::StreamT& writer) {
   for (const auto& lang : langs) {
-    if (auto v = writer.enterSubVector(lang.first.toString()))
+    if (auto v = writer.enterSubVector(lang.first.toStringView()))
       for (const std::u16string& str : lang.second)
         writer.writeU16String(str);
   }

@@ -99,9 +99,9 @@ if(MSVC)
   endif()
 
 else()
-  if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
-    # For libstdc++ shipped with GCC 9.1, this is required to summarize std::string
-    #add_compile_definitions(_GLIBCXX_DEBUG=1)
+  if("${CMAKE_BUILD_TYPE}" STREQUAL Debug AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL Clang)
+    # This is required to summarize std::string when compiled by clang
+    add_compile_options(-fno-limit-debug-info)
   endif()
 
   if(${URDE_VECTOR_ISA} STREQUAL "avx2")
@@ -138,7 +138,7 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions")
   add_compile_options(-Wall -Wno-multichar -Werror=implicit-fallthrough -Wno-unknown-warning-option
                       -Wno-lto-type-mismatch -Wno-unused-variable -Wno-unused-private-field
-                      -Wno-unused-function -Wno-sign-compare -Wno-unknown-pragmas -Werror)
+                      -Wno-unused-function -Wno-sign-compare -Wno-unknown-pragmas -Wno-error=cpp -Werror)
   add_compile_definitions(FMT_EXCEPTIONS=0)
 
   if(APPLE)
