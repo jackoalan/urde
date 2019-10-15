@@ -7,10 +7,6 @@
 
 #include <logvisor/logvisor.hpp>
 
-#if defined(__GNUC__) && !defined(__clang__)
-#warning GCC compiles this template system very slowly. Using clang is highly recommended.
-#endif
-
 namespace DataSpec::DNAParticle {
 extern logvisor::Module LogModule;
 
@@ -28,130 +24,25 @@ enum class ParticleType {
  * for storing, enumerating, and streaming particle scripts.
  */
 
-class PPUtils {
-  friend class PEUtils;
+template <class _Basis>
+struct PPImpl : BigDNA, _Basis {
+  AT_DECL_EXPLICIT_DNA_YAML
 
-  template<std::size_t _Idx, typename _Key, typename _Tuple>
-  struct _Match;
-
-  template<std::size_t _Idx, typename _Key, typename _First, typename... _Rest>
-  struct _Match<_Idx, _Key, std::tuple<_First, _Rest...>>
-      : _Match<_Idx + 1, _Key, std::tuple<_Rest...>> {};
-
-  template<std::size_t _Idx, typename _First, typename... _Rest>
-  struct _Match<_Idx, typename _First::FourCC, std::tuple<_First, _Rest...>>
-  { using Type = _First; static constexpr std::size_t Index = _Idx; };
-
-  template<std::size_t _Idx, std::size_t _BIdx, typename _Tuple>
-  struct _Count { static constexpr std::size_t Count = _Idx; static constexpr std::size_t BoolCount = _BIdx; };
-
-  template<std::size_t _Idx, std::size_t _BIdx, typename _First, typename... _Rest>
-  struct _Count<_Idx, _BIdx, std::tuple<_First, _Rest...>>
-      : _Count<_Idx + 1, _BIdx + (_First::IsBool ? 1 : 0), std::tuple<_Rest...>> {};
-
-  template<std::size_t _Idx, std::size_t _BIdx, typename _Type, typename _Tuple>
-  struct _GetStoreIndex;
-
-  template<std::size_t _Idx, std::size_t _BIdx, typename _Type, typename _First, typename... _Rest>
-  struct _GetStoreIndex<_Idx, _BIdx, _Type, std::tuple<_First, _Rest...>>
-      : _GetStoreIndex<_Idx + 1, _BIdx + (_First::IsBool ? 1 : 0),
-          _Type, std::tuple<_Rest...>> {};
-
-  template<std::size_t _Idx, std::size_t _BIdx, typename _First, typename... _Rest>
-  struct _GetStoreIndex<_Idx, _BIdx, _First, std::tuple<_First, _Rest...>> {
-    static constexpr bool IsBool = _First::IsBool;
-    static constexpr std::size_t Index = (_First::IsBool ? _BIdx : _Idx);
-  };
-
-  template<typename _PropsTuple, typename _Indices>
-  struct _Validate {};
-
-  template<typename _PropsTuple, std::size_t _First, std::size_t _Second, std::size_t... _Rest>
-  struct _Validate<_PropsTuple, std::index_sequence<_First, _Second, _Rest...>>
-      : _Validate<_PropsTuple, std::index_sequence<_Second, _Rest...>> {
-    static constexpr auto First = std::tuple_element_t<_First, _PropsTuple>::FourCC::value;
-    static constexpr auto Second = std::tuple_element_t<_Second, _PropsTuple>::FourCC::value;
-    static_assert(SBIG(First) < SBIG(Second), "Property set is not sorted.");
-  };
-
-  template<auto _Idx, typename _Props>
-  struct _PropGetFunc {
-    using _Tp = std::tuple_element_t<_Idx, typename _Props::PropsTuple>;
-    static constexpr _Tp& Get(_Props& p) { return const_cast<_Tp&>(std::get<_Idx>(p.m_props)); }
-  };
-
-  template<auto _Idx, typename _Props>
-  static constexpr auto _IndexSorted = std::tuple_element_t<_Idx, typename _Props::PropsSortedIndices>::value;
-
-  template<std::size_t... _Idxs>
-  static constexpr auto _GetIndexSorted(std::index_sequence<_Idxs...>, std::size_t i) {
-    constexpr std::size_t arr[] = {_Idxs...};
-    return arr[i];
-  }
-
-  template<template<auto, typename> typename _GetFunc,
-           auto _Head, auto _Tail, typename _KeyTp, typename _Props, typename _Func>
-  static bool _Search(_KeyTp k, _Props& p, _Func f) {
-    using PropsTuple = typename _Props::PropsTuple;
-    constexpr auto _SearchSz = _Tail - _Head;
-    if constexpr (_SearchSz == 0) {
-      return false;
-    } else if constexpr (_SearchSz == 1) {
-      constexpr auto _HeadIdx = _GetIndexSorted(typename _Props::PropsSortedIndices{}, _Head);
-      constexpr _KeyTp _HeadK = std::tuple_element_t<_HeadIdx, PropsTuple>::FourCC::value;
-      constexpr _KeyTp _HeadKS = SBIG(_HeadK);
-      if (_HeadKS == k) {
-        f(_GetFunc<_HeadIdx, _Props>::Get(p));
-        return true;
-      }
-      return false;
+  template<typename T>
+  static constexpr bool _shouldStore(T& p, bool defaultBool) {
+    if constexpr (std::is_same_v<T, bool>) {
+      return p != defaultBool;
+    } else if constexpr (std::is_same_v<T, uint32_t>) {
+      return p != 0xffffffff;
+    } else if constexpr (std::is_same_v<T, float>) {
+      return true;
     } else {
-      constexpr auto _Mid = (_Head + (_Tail - 1)) / 2;
-      constexpr auto _MidIdx = _GetIndexSorted(typename _Props::PropsSortedIndices{}, _Mid);
-      constexpr _KeyTp _MidK = std::tuple_element_t<_MidIdx, PropsTuple>::FourCC::value;
-      constexpr _KeyTp _MidKS = SBIG(_MidK);
-      if (_MidKS == k) {
-        f(_GetFunc<_MidIdx, _Props>::Get(p));
-        return true;
-      } else if (_MidKS < k) {
-        return _Search<_GetFunc, _Mid + 1, _Tail>(k, p, f);
-      } else {
-        return _Search<_GetFunc, _Head, _Mid>(k, p, f);
-      }
+      return p.operator bool();
     }
   }
 
-public:
-  /* Static utilities */
-  template<typename _PropsTuple>
-  using Count = _Count<0, 0, _PropsTuple>;
-  template<auto _Key, typename _Props>
-  using GetElement = _Match<0, std::integral_constant<decltype(_Key), _Key>, typename _Props::PropsTuple>;
-  template<typename _Type, typename _Props>
-  using GetStoreIndex = _GetStoreIndex<0, 0, _Type, typename _Props::PropsTuple>;
-  template<typename _Props>
-  using Validate = _Validate<typename _Props::PropsTuple, typename _Props::PropsSortedIndices>;
-  template<auto _Key, typename _Props>
-  static constexpr decltype(auto) Get(_Props& p) {
-    decltype(auto) prop = _PropGetFunc<GetElement<_Key, _Props>::Index, _Props>::Get(p);
-    using Tp = std::decay_t<decltype(prop)>;
-    if constexpr (Tp::IsBool)
-      return p.m_boolProps[GetStoreIndex<Tp, _Props>::Index];
-    else
-      return prop;
-  }
-
-  /* Dynamic utilities */
-  template<typename _KeyTp, typename _Props, typename _Func>
-  static bool Search(_KeyTp k, _Props& p, _Func f) {
-    return _Search<_PropGetFunc, 0, std::tuple_size_v<typename _Props::PropsTuple>>(hecl::SBig(k), p, f);
-  }
-
-  /* Stream utilities */
-  template<typename _Props>
-  static void Read(athena::io::IStreamReader& r, _Props& props) {
-    constexpr FourCC RefType = uint32_t(_Props::Type);
-    using FCCType = typename std::tuple_element_t<0, typename _Props::PropsTuple>::FourCC::value_type;
+  void _read(athena::io::IStreamReader& r) {
+    constexpr FourCC RefType = uint32_t(_Basis::Type);
     DNAFourCC clsId;
     clsId.read(r);
     if (clsId != RefType) {
@@ -160,13 +51,19 @@ public:
     }
     clsId.read(r);
     while (clsId != SBIG('_END')) {
-      if (!Search(FCCType(clsId.toUint32()), props, [&](auto&& p) {
+      if (!_Basis::Lookup(clsId, [&](auto& p) {
         using Tp = std::decay_t<decltype(p)>;
-        if constexpr (Tp::IsBool) {
+        if constexpr (std::is_same_v<Tp, bool>) {
           r.readUint32Big();
-          p.GetRef(props) = r.readBool();
+          p = r.readBool();
+        } else if constexpr (std::is_same_v<Tp, uint32_t>) {
+          r.readUint32Big();
+          p = r.readUint32Big();
+        } else if constexpr (std::is_same_v<Tp, float>) {
+          r.readUint32Big();
+          p = r.readFloatBig();
         } else {
-          p.GetRef(props).read(r);
+          p.read(r);
         }
       })) {
         LogModule.report(logvisor::Fatal, fmt("Unknown {} class {} @{}"), RefType, clsId, r.position());
@@ -175,53 +72,51 @@ public:
     }
   }
 
-  template<typename _Props>
-  static void Write(athena::io::IStreamWriter& w, _Props& props) {
-    constexpr DNAFourCC RefType = uint32_t(_Props::Type);
+  void _write(athena::io::IStreamWriter& w) {
+    constexpr DNAFourCC RefType = uint32_t(_Basis::Type);
     RefType.write(w);
-    std::apply([&](auto&&... p) {
-      ([&](auto&& p) {
-        if (p.ShouldStore(props)) {
-          using Tp = std::decay_t<decltype(p)>;
-          constexpr DNAFourCC ThisType = uint32_t(Tp::FourCC::value);
-          ThisType.write(w);
-          if constexpr (Tp::IsBool) {
-            w.writeBytes("CNST", 4);
-            w.writeBool(p.GetRef(props));
-          } else {
-            p.GetRef(props).write(w);
-          }
+    _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
+      if (_shouldStore(p, defaultBool)) {
+        using Tp = std::decay_t<decltype(p)>;
+        DNAFourCC(fcc).write(w);
+        if constexpr (std::is_same_v<Tp, bool>) {
+          w.writeBytes("CNST", 4);
+          w.writeBool(p);
+        } else if constexpr (std::is_same_v<Tp, uint32_t>) {
+          w.writeBytes("CNST", 4);
+          w.writeUint32Big(p);
+        } else if constexpr (std::is_same_v<Tp, float>) {
+          w.writeBytes("CNST", 4);
+          w.writeFloatBig(p);
+        } else {
+          p.write(w);
         }
-      }(p), ...);
-    }, props.m_props);
+      }
+    });
     w.writeBytes("_END", 4);
   }
 
-  template<typename _Props>
-  static void BinarySize(std::size_t& s, _Props& props) {
-    constexpr DNAFourCC RefType = uint32_t(_Props::Type);
+  void _binarySize(std::size_t& s) {
+    constexpr DNAFourCC RefType = uint32_t(_Basis::Type);
     RefType.binarySize(s);
-    std::apply([&](auto&&... p) {
-      ([&](auto&& p) {
-        if (p.ShouldStore(props)) {
-          using Tp = std::decay_t<decltype(p)>;
-          constexpr DNAFourCC ThisType = uint32_t(Tp::FourCC::value);
-          ThisType.binarySize(s);
-          if constexpr (Tp::IsBool) {
-            s += 5;
-          } else {
-            p.GetRef(props).binarySize(s);
-          }
+    _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
+      if (_shouldStore(p, defaultBool)) {
+        using Tp = std::decay_t<decltype(p)>;
+        DNAFourCC(fcc).binarySize(s);
+        if constexpr (std::is_same_v<Tp, bool>) {
+          s += 5;
+        } else if constexpr (std::is_same_v<Tp, uint32_t> || std::is_same_v<Tp, float>) {
+          s += 8;
+        } else {
+          p.binarySize(s);
         }
-      }(p), ...);
-    }, props.m_props);
+      }
+    });
     s += 4;
   }
 
-  template<typename _Props>
-  static void ReadYaml(athena::io::YAMLDocReader& r, _Props& props) {
-    constexpr FourCC RefType = uint32_t(_Props::Type);
-    using FCCType = typename std::tuple_element_t<0, typename _Props::PropsTuple>::FourCC::value_type;
+  void _read(athena::io::YAMLDocReader& r) {
+    constexpr DNAFourCC RefType = uint32_t(_Basis::Type);
 
     for (const auto& [key, value] : r.getCurNode()->m_mapChildren) {
       if (key == "DNAType"sv)
@@ -233,12 +128,16 @@ public:
 
       if (auto rec = r.enterSubRecord(key)) {
         const DNAFourCC clsId = key.c_str();
-        if (!Search(FCCType(clsId.toUint32()), props, [&](auto&& p) {
+        if (!_Basis::Lookup(clsId, [&](auto& p) {
           using Tp = std::decay_t<decltype(p)>;
-          if constexpr (Tp::IsBool) {
-            p.GetRef(props) = r.readBool();
+          if constexpr (std::is_same_v<Tp, bool>) {
+            p = r.readBool();
+          } else if constexpr (std::is_same_v<Tp, uint32_t>) {
+            p = r.readUint32();
+          } else if constexpr (std::is_same_v<Tp, float>) {
+            p = r.readFloat();
           } else {
-            p.GetRef(props).read(r);
+            p.read(r);
           }
         })) {
           LogModule.report(logvisor::Fatal, fmt("Unknown {} class {}"), RefType, clsId);
@@ -247,179 +146,83 @@ public:
     }
   }
 
-  template<typename _Props>
-  static void WriteYaml(athena::io::YAMLDocWriter& w, _Props& props) {
-    std::apply([&](auto&&... p) {
-      ([&](auto&& p) {
-        if (p.ShouldStore(props)) {
-          using Tp = std::decay_t<decltype(p)>;
-          constexpr DNAFourCC ThisType = uint32_t(Tp::FourCC::value);
-          if (auto rec = w.enterSubRecord(ThisType.toStringView())) {
-            if constexpr (Tp::IsBool) {
-              w.writeBool(p.GetRef(props));
-            } else {
-              p.GetRef(props).write(w);
-            }
+  void _write(athena::io::YAMLDocWriter& w) {
+    _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
+      if (_shouldStore(p, defaultBool)) {
+        using Tp = std::decay_t<decltype(p)>;
+        if (auto rec = w.enterSubRecord(fcc.toStringView())) {
+          if constexpr (std::is_same_v<Tp, bool>) {
+            w.writeBool(p);
+          } else if constexpr (std::is_same_v<Tp, uint32_t>) {
+            w.writeUint32(p);
+          } else if constexpr (std::is_same_v<Tp, float>) {
+            w.writeFloat(p);
+          } else {
+            p.write(w);
           }
         }
-      }(p), ...);
-    }, props.m_props);
+      }
+    });
   }
 
-  template<typename _Props>
-  static void GatherDependencies(std::vector<hecl::ProjectPath>& deps, _Props& props) {
-    std::apply([&](auto&&... p) {
-      ([&](auto&& p) {
-        using Tp = std::decay_t<decltype(p)>;
-        if constexpr (!Tp::IsBool)
-          p.GetRef(props).gatherDependencies(deps);
-      }(p), ...);
-    }, props.m_props);
+  void gatherDependencies(std::vector<hecl::ProjectPath>& deps) {
+    _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
+      using Tp = std::decay_t<decltype(p)>;
+      if constexpr (!std::is_same_v<Tp, bool> && !std::is_same_v<Tp, uint32_t> && !std::is_same_v<Tp, float>)
+        p.gatherDependencies(deps);
+    });
+  }
+
+  void gatherDependencies(std::vector<hecl::ProjectPath>& deps) const {
+    const_cast<std::remove_const_t<decltype(*this)>>(*this).gatherDependencies(deps);
   }
 };
 
-template <auto FCC, typename T, bool _DefaultBool = false>
-struct PP : T {
-  static constexpr bool IsBool = false;
-  static constexpr bool IsCP = false;
-  static constexpr bool IsDP = false;
-  using Type = T;
-  using FourCC = std::integral_constant<decltype(FCC), FCC>;
-  template<typename _Props>
-  T& GetRef(_Props& p) { return *this; }
-  template<typename _Props>
-  bool ShouldStore(_Props& p) { return T::operator bool(); }
-};
-
-/* Boolean types are stored in a separate bitset */
-template <auto FCC, bool _DefaultBool>
-struct PP<FCC, bool, _DefaultBool> {
-  static constexpr bool IsBool = true;
-  static constexpr bool IsCP = false;
-  static constexpr bool IsDP = false;
-  using Type = bool;
-  using FourCC = std::integral_constant<decltype(FCC), FCC>;
-  using DefaultBool = std::integral_constant<bool, _DefaultBool>;
-  template<typename _Props>
-  decltype(auto) GetRef(_Props& p) {
-    using Tp = std::decay_t<decltype(*this)>;
-    return p.m_boolProps[PPUtils::GetStoreIndex<Tp, _Props>::Index];
-  }
-  template<typename _Props>
-  bool ShouldStore(_Props& p) { return GetRef(p) != DefaultBool::value; }
-};
-
-template <typename _PropsTuple, auto... _SortedTypes>
-struct _PPSet {
-  using Self = _PPSet<_PropsTuple, _SortedTypes...>;
-  using PropsTuple = _PropsTuple;
-  using PropsSortedIndices = std::index_sequence<PPUtils::GetElement<_SortedTypes, Self>::Index...>;
-  static_assert(std::tuple_size_v<PropsTuple> == PropsSortedIndices::size(),
-                "Tuple and sorted indices size mismatch.");
-  using PropsBitset = std::bitset<PPUtils::Count<PropsTuple>::BoolCount>;
-private:
-#if !defined(__GNUC__) || defined(__clang__)
-  /* Disabled on GCC for its annoying slowness. */
-  static constexpr PPUtils::Validate<Self> _validate{};
-#endif
-};
-
-template <ParticleType _Type, typename _PropsTuple, auto... _SortedTypes>
-struct PPSet : _PPSet<_PropsTuple, _SortedTypes...> {
-  static constexpr ParticleType Type = _Type;
-  using Base = _PPSet<_PropsTuple, _SortedTypes...>;
-  typename Base::PropsTuple m_props;
-  typename Base::PropsBitset m_boolProps;
-  PPSet() {
-    std::apply([&](auto&&... p) {
-      ([&](auto&& p) {
-        using Tp = std::decay_t<decltype(p)>;
-        if constexpr (Tp::IsBool)
-          if constexpr (Tp::DefaultBool::value)
-            m_boolProps[PPUtils::GetStoreIndex<Tp, Base>::Index] = true;
-      }(p), ...);
-    }, m_props);
-  }
+template <typename _Type>
+struct PEType {
+  using Type = _Type;
 };
 
 template <class _Basis>
-struct PPImpl : BigDNA {
+struct PEImpl : BigDNA {
   AT_DECL_EXPLICIT_DNA_YAML
-  using EPP = typename _Basis::EPP;
-  template<EPP _Key>
-  decltype(auto) get() { return PPUtils::Get<_Key>(m_props); }
+  using _PtrType = typename _Basis::PtrType;
 
-  void _read(athena::io::IStreamReader& r) { PPUtils::Read(r, m_props); }
-  void _write(athena::io::IStreamWriter& w) { PPUtils::Write(w, m_props); }
-  void _binarySize(std::size_t& s) { PPUtils::BinarySize(s, m_props); }
-  void _read(athena::io::YAMLDocReader& r) { PPUtils::ReadYaml(r, m_props); }
-  void _write(athena::io::YAMLDocWriter& w) { PPUtils::WriteYaml(w, m_props); }
-
-  void gatherDependencies(std::vector<hecl::ProjectPath>& deps) const {
-    PPUtils::GatherDependencies(deps, const_cast<typename _Basis::Properties&>(m_props));
-  }
-
-protected:
-  typename _Basis::Properties m_props;
-};
-
-class PEUtils {
-  template<auto _Idx, typename _Elems>
-  struct _ElemGetFunc {
-    using _Tp = std::tuple_element_t<_Idx, typename _Elems::PropsTuple>;
-    static constexpr _Tp Get(_Elems& e) { return _Tp(); }
-  };
-
-public:
-  /* Dynamic utilities */
-  template<typename _KeyTp, typename _Elems, typename _Func>
-  static bool Search(_KeyTp k, _Elems& e, _Func f) {
-    return PPUtils::_Search<_ElemGetFunc, 0, std::tuple_size_v<typename _Elems::PropsTuple>>(hecl::SBig(k), e, f);
-  }
-
-  /* Stream utilities */
-  template<typename _Elems>
-  static void Read(athena::io::IStreamReader& r, _Elems& elems) {
-    using FCCType = typename std::tuple_element_t<0, typename _Elems::PropsTuple>::FourCC::value_type;
+  void _read(athena::io::IStreamReader& r) {
     DNAFourCC clsId;
     clsId.read(r);
     if (clsId == FOURCC('NONE')) {
-      elems.m_elem.reset();
+      m_elem.reset();
       return;
     }
-    if (!Search(FCCType(clsId.toUint32()), elems, [&](auto&& p) {
+    if (!_Basis::Lookup(clsId, [&](auto&& p) {
       using Tp = std::decay_t<decltype(p)>;
-      elems.m_elem = std::make_unique<typename Tp::Type>();
-      elems.m_elem->read(r);
+      m_elem = std::make_unique<typename Tp::Type>();
+      m_elem->read(r);
     })) {
-      LogModule.report(logvisor::Fatal, fmt("Unknown {} class {} @{}"), _Elems::PtrType::TypeName, clsId, r.position());
+      LogModule.report(logvisor::Fatal, fmt("Unknown {} class {} @{}"), _PtrType::TypeName, clsId, r.position());
     }
   }
 
-  template<typename _Elems>
-  static void Write(athena::io::IStreamWriter& w, _Elems& elems) {
-    if (elems.m_elem) {
-      w.writeBytes(elems.m_elem->ClassID().data(), 4);
-      elems.m_elem->write(w);
+  void _write(athena::io::IStreamWriter& w) {
+    if (m_elem) {
+      w.writeBytes(m_elem->ClassID().data(), 4);
+      m_elem->write(w);
     } else {
       w.writeBytes("NONE", 4);
     }
   }
 
-  template<typename _Elems>
-  static void BinarySize(std::size_t& s, _Elems& elems) {
-    if (elems.m_elem)
-      elems.m_elem->binarySize(s);
+  void _binarySize(std::size_t& s) {
+    if (m_elem)
+      m_elem->binarySize(s);
     s += 4;
   }
 
-  template<typename _Elems>
-  static void ReadYaml(athena::io::YAMLDocReader& r, _Elems& elems) {
-    using FCCType = typename std::tuple_element_t<0, typename _Elems::PropsTuple>::FourCC::value_type;
-
+  void _read(athena::io::YAMLDocReader& r) {
     const auto& mapChildren = r.getCurNode()->m_mapChildren;
     if (mapChildren.empty()) {
-      elems.m_elem.reset();
+      m_elem.reset();
       return;
     }
 
@@ -429,57 +232,32 @@ public:
 
     if (auto rec = r.enterSubRecord(key)) {
       const DNAFourCC clsId = key.c_str();
-      if (!Search(FCCType(clsId.toUint32()), elems, [&](auto&& p) {
+      if (!_Basis::Lookup(clsId, [&](auto&& p) {
         using Tp = std::decay_t<decltype(p)>;
-        elems.m_elem = std::make_unique<typename Tp::Type>();
-        elems.m_elem->read(r);
+        m_elem = std::make_unique<typename Tp::Type>();
+        m_elem->read(r);
       })) {
-        LogModule.report(logvisor::Fatal, fmt("Unknown {} class {}"), _Elems::PtrType::TypeName, clsId);
+        LogModule.report(logvisor::Fatal, fmt("Unknown {} class {}"), _PtrType::TypeName, clsId);
       }
     }
   }
 
-  template<typename _Elems>
-  static void WriteYaml(athena::io::YAMLDocWriter& w, _Elems& elems) {
-    if (elems.m_elem)
-      if (auto rec = w.enterSubRecord(elems.m_elem->ClassID()))
-        elems.m_elem->write(w);
+  void _write(athena::io::YAMLDocWriter& w) {
+    if (m_elem)
+      if (auto rec = w.enterSubRecord(m_elem->ClassID()))
+        m_elem->write(w);
   }
-};
-
-template <auto FCC, typename T>
-struct PE {
-  static constexpr bool IsBool = false;
-  using Type = T;
-  using FourCC = std::integral_constant<decltype(FCC), FCC>;
-};
-
-template <typename _PtrType, typename _PropsTuple, auto... _SortedTypes>
-struct PESet : _PPSet<_PropsTuple, _SortedTypes...> {
-  using PtrType = _PtrType;
-  std::unique_ptr<_PtrType> m_elem;
-};
-
-template <class _Basis>
-struct PEImpl : BigDNA {
-  AT_DECL_EXPLICIT_DNA_YAML
-
-  void _read(athena::io::IStreamReader& r) { PEUtils::Read(r, m_elems); }
-  void _write(athena::io::IStreamWriter& w) { PEUtils::Write(w, m_elems); }
-  void _binarySize(std::size_t& s) { PEUtils::BinarySize(s, m_elems); }
-  void _read(athena::io::YAMLDocReader& r) { PEUtils::ReadYaml(r, m_elems); }
-  void _write(athena::io::YAMLDocWriter& w) { PEUtils::WriteYaml(w, m_elems); }
 
   void gatherDependencies(std::vector<hecl::ProjectPath>& deps) const {
-    _Basis::gatherDependencies(deps, m_elems.m_elem);
+    _Basis::gatherDependencies(deps, m_elem);
   }
 
-  operator bool() const { return m_elems.m_elem.operator bool(); }
-  auto* get() const { return m_elems.m_elem.get(); }
+  operator bool() const { return m_elem.operator bool(); }
+  auto* get() const { return m_elem.get(); }
   auto* operator->() const { return get(); }
-  void reset() { m_elems.m_elem.reset(); }
+  void reset() { m_elem.reset(); }
 private:
-  typename _Basis::Elements m_elems;
+  std::unique_ptr<_PtrType> m_elem;
 };
 
 struct IElement : BigDNAVYaml {
@@ -493,277 +271,294 @@ struct IRealElement : IElement {
   Delete _d2;
   static constexpr std::string_view TypeName = "RealElement"sv;
 };
+struct RELifetimeTween;
+struct REConstant;
+struct RETimeChain;
+struct REAdd;
+struct REClamp;
+struct REKeyframeEmitter;
+struct REKeyframeEmitter;
+struct REInitialRandom;
+struct RERandom;
+struct REMultiply;
+struct REPulse;
+struct RETimeScale;
+struct RELifetimePercent;
+struct RESineWave;
+struct REInitialSwitch;
+struct RECompareLessThan;
+struct RECompareEquals;
+struct REParticleAdvanceParam1;
+struct REParticleAdvanceParam2;
+struct REParticleAdvanceParam3;
+struct REParticleAdvanceParam4;
+struct REParticleAdvanceParam5;
+struct REParticleAdvanceParam6;
+struct REParticleAdvanceParam7;
+struct REParticleAdvanceParam8;
+struct REParticleSizeOrLineLength;
+struct REParticleRotationOrLineWidth;
+struct RESubtract;
+struct REVectorMagnitude;
+struct REVectorXToReal;
+struct REVectorYToReal;
+struct REVectorZToReal;
+struct RECEXT;
+struct REIntTimesReal;
 struct _RealElementFactory {
-  enum EPP : uint32_t {
-    LFTW = SBIG('LFTW'),
-    CNST = SBIG('CNST'),
-    CHAN = SBIG('CHAN'),
-    ADD_ = SBIG('ADD_'),
-    CLMP = SBIG('CLMP'),
-    KEYE = SBIG('KEYE'),
-    KEYP = SBIG('KEYP'),
-    IRND = SBIG('IRND'),
-    RAND = SBIG('RAND'),
-    MULT = SBIG('MULT'),
-    PULS = SBIG('PULS'),
-    SCAL = SBIG('SCAL'),
-    RLPT = SBIG('RLPT'),
-    SINE = SBIG('SINE'),
-    ISWT = SBIG('ISWT'),
-    CLTN = SBIG('CLTN'),
-    CEQL = SBIG('CEQL'),
-    PAP1 = SBIG('PAP1'),
-    PAP2 = SBIG('PAP2'),
-    PAP3 = SBIG('PAP3'),
-    PAP4 = SBIG('PAP4'),
-    PAP5 = SBIG('PAP5'),
-    PAP6 = SBIG('PAP6'),
-    PAP7 = SBIG('PAP7'),
-    PAP8 = SBIG('PAP8'),
-    PSLL = SBIG('PSLL'),
-    PRLW = SBIG('PRLW'),
-    SUB_ = SBIG('SUB_'),
-    VMAG = SBIG('VMAG'),
-    VXTR = SBIG('VXTR'),
-    VYTR = SBIG('VYTR'),
-    VZTR = SBIG('VZTR'),
-    CEXT = SBIG('CEXT'),
-    ITRL = SBIG('ITRL'),
-  };
-  using Elements = PESet<
-      IRealElement, std::tuple<
-          PE<LFTW, struct RELifetimeTween>,
-          PE<CNST, struct REConstant>,
-          PE<CHAN, struct RETimeChain>,
-          PE<ADD_, struct REAdd>,
-          PE<CLMP, struct REClamp>,
-          PE<KEYE, struct REKeyframeEmitter>,
-          PE<KEYP, struct REKeyframeEmitter>,
-          PE<IRND, struct REInitialRandom>,
-          PE<RAND, struct RERandom>,
-          PE<MULT, struct REMultiply>,
-          PE<PULS, struct REPulse>,
-          PE<SCAL, struct RETimeScale>,
-          PE<RLPT, struct RELifetimePercent>,
-          PE<SINE, struct RESineWave>,
-          PE<ISWT, struct REInitialSwitch>,
-          PE<CLTN, struct RECompareLessThan>,
-          PE<CEQL, struct RECompareEquals>,
-          PE<PAP1, struct REParticleAdvanceParam1>,
-          PE<PAP2, struct REParticleAdvanceParam2>,
-          PE<PAP3, struct REParticleAdvanceParam3>,
-          PE<PAP4, struct REParticleAdvanceParam4>,
-          PE<PAP5, struct REParticleAdvanceParam5>,
-          PE<PAP6, struct REParticleAdvanceParam6>,
-          PE<PAP7, struct REParticleAdvanceParam7>,
-          PE<PAP8, struct REParticleAdvanceParam8>,
-          PE<PSLL, struct REParticleSizeOrLineLength>,
-          PE<PRLW, struct REParticleRotationOrLineWidth>,
-          PE<SUB_, struct RESubtract>,
-          PE<VMAG, struct REVectorMagnitude>,
-          PE<VXTR, struct REVectorXToReal>,
-          PE<VYTR, struct REVectorYToReal>,
-          PE<VZTR, struct REVectorZToReal>,
-          PE<CEXT, struct RECEXT>,
-          PE<ITRL, struct REIntTimesReal>>,
-      ADD_, CEQL, CEXT, CHAN, CLMP, CLTN, CNST, IRND, ISWT, ITRL, KEYE, KEYP, LFTW, MULT, PAP1, PAP2, PAP3, PAP4, PAP5,
-      PAP6, PAP7, PAP8, PRLW, PSLL, PULS, RAND, RLPT, SCAL, SINE, SUB_, VMAG, VXTR, VYTR, VZTR>;
+  using PtrType = IRealElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('LFTW'): f(PEType<RELifetimeTween>{}); return true;
+    case SBIG('CNST'): f(PEType<REConstant>{}); return true;
+    case SBIG('CHAN'): f(PEType<RETimeChain>{}); return true;
+    case SBIG('ADD_'): f(PEType<REAdd>{}); return true;
+    case SBIG('CLMP'): f(PEType<REClamp>{}); return true;
+    case SBIG('KEYE'): f(PEType<REKeyframeEmitter>{}); return true;
+    case SBIG('KEYP'): f(PEType<REKeyframeEmitter>{}); return true;
+    case SBIG('IRND'): f(PEType<REInitialRandom>{}); return true;
+    case SBIG('RAND'): f(PEType<RERandom>{}); return true;
+    case SBIG('MULT'): f(PEType<REMultiply>{}); return true;
+    case SBIG('PULS'): f(PEType<REPulse>{}); return true;
+    case SBIG('SCAL'): f(PEType<RETimeScale>{}); return true;
+    case SBIG('RLPT'): f(PEType<RELifetimePercent>{}); return true;
+    case SBIG('SINE'): f(PEType<RESineWave>{}); return true;
+    case SBIG('ISWT'): f(PEType<REInitialSwitch>{}); return true;
+    case SBIG('CLTN'): f(PEType<RECompareLessThan>{}); return true;
+    case SBIG('CEQL'): f(PEType<RECompareEquals>{}); return true;
+    case SBIG('PAP1'): f(PEType<REParticleAdvanceParam1>{}); return true;
+    case SBIG('PAP2'): f(PEType<REParticleAdvanceParam2>{}); return true;
+    case SBIG('PAP3'): f(PEType<REParticleAdvanceParam3>{}); return true;
+    case SBIG('PAP4'): f(PEType<REParticleAdvanceParam4>{}); return true;
+    case SBIG('PAP5'): f(PEType<REParticleAdvanceParam5>{}); return true;
+    case SBIG('PAP6'): f(PEType<REParticleAdvanceParam6>{}); return true;
+    case SBIG('PAP7'): f(PEType<REParticleAdvanceParam7>{}); return true;
+    case SBIG('PAP8'): f(PEType<REParticleAdvanceParam8>{}); return true;
+    case SBIG('PSLL'): f(PEType<REParticleSizeOrLineLength>{}); return true;
+    case SBIG('PRLW'): f(PEType<REParticleRotationOrLineWidth>{}); return true;
+    case SBIG('SUB_'): f(PEType<RESubtract>{}); return true;
+    case SBIG('VMAG'): f(PEType<REVectorMagnitude>{}); return true;
+    case SBIG('VXTR'): f(PEType<REVectorXToReal>{}); return true;
+    case SBIG('VYTR'): f(PEType<REVectorYToReal>{}); return true;
+    case SBIG('VZTR'): f(PEType<REVectorZToReal>{}); return true;
+    case SBIG('CEXT'): f(PEType<RECEXT>{}); return true;
+    case SBIG('ITRL'): f(PEType<REIntTimesReal>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IRealElement>& elemPtr) {}
 };
+extern template struct PEImpl<_RealElementFactory>;
 using RealElementFactory = PEImpl<_RealElementFactory>;
 
 struct IIntElement : IElement {
   Delete _d2;
   static constexpr std::string_view TypeName = "IntElement"sv;
 };
+struct IEKeyframeEmitter;
+struct IEKeyframeEmitter;
+struct IEDeath;
+struct IEClamp;
+struct IETimeChain;
+struct IEAdd;
+struct IEConstant;
+struct IEImpulse;
+struct IELifetimePercent;
+struct IEInitialRandom;
+struct IEPulse;
+struct IEMultiply;
+struct IESampleAndHold;
+struct IERandom;
+struct IETimeScale;
+struct IEGTCP;
+struct IEModulo;
+struct IESubtract;
 struct _IntElementFactory {
-  enum EPP : uint32_t {
-    KEYE = SBIG('KEYE'),
-    KEYP = SBIG('KEYP'),
-    DETH = SBIG('DETH'),
-    CLMP = SBIG('CLMP'),
-    CHAN = SBIG('CHAN'),
-    ADD_ = SBIG('ADD_'),
-    CNST = SBIG('CNST'),
-    IMPL = SBIG('IMPL'),
-    ILPT = SBIG('ILPT'),
-    IRND = SBIG('IRND'),
-    PULS = SBIG('PULS'),
-    MULT = SBIG('MULT'),
-    SPAH = SBIG('SPAH'),
-    RAND = SBIG('RAND'),
-    TSCL = SBIG('TSCL'),
-    GTCP = SBIG('GTCP'),
-    MODU = SBIG('MODU'),
-    SUB_ = SBIG('SUB_'),
-  };
-  using Elements = PESet<
-      IIntElement, std::tuple<
-          PE<KEYE, struct IEKeyframeEmitter>,
-          PE<KEYP, struct IEKeyframeEmitter>,
-          PE<DETH, struct IEDeath>,
-          PE<CLMP, struct IEClamp>,
-          PE<CHAN, struct IETimeChain>,
-          PE<ADD_, struct IEAdd>,
-          PE<CNST, struct IEConstant>,
-          PE<IMPL, struct IEImpulse>,
-          PE<ILPT, struct IELifetimePercent>,
-          PE<IRND, struct IEInitialRandom>,
-          PE<PULS, struct IEPulse>,
-          PE<MULT, struct IEMultiply>,
-          PE<SPAH, struct IESampleAndHold>,
-          PE<RAND, struct IERandom>,
-          PE<TSCL, struct IETimeScale>,
-          PE<GTCP, struct IEGTCP>,
-          PE<MODU, struct IEModulo>,
-          PE<SUB_, struct IESubtract>>,
-      ADD_, CHAN, CLMP, CNST, DETH, GTCP, ILPT, IMPL, IRND, KEYE, KEYP, MODU, MULT, PULS, RAND, SPAH, SUB_, TSCL>;
+  using PtrType = IIntElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('KEYE'): f(PEType<IEKeyframeEmitter>{}); return true;
+    case SBIG('KEYP'): f(PEType<IEKeyframeEmitter>{}); return true;
+    case SBIG('DETH'): f(PEType<IEDeath>{}); return true;
+    case SBIG('CLMP'): f(PEType<IEClamp>{}); return true;
+    case SBIG('CHAN'): f(PEType<IETimeChain>{}); return true;
+    case SBIG('ADD_'): f(PEType<IEAdd>{}); return true;
+    case SBIG('CNST'): f(PEType<IEConstant>{}); return true;
+    case SBIG('IMPL'): f(PEType<IEImpulse>{}); return true;
+    case SBIG('ILPT'): f(PEType<IELifetimePercent>{}); return true;
+    case SBIG('IRND'): f(PEType<IEInitialRandom>{}); return true;
+    case SBIG('PULS'): f(PEType<IEPulse>{}); return true;
+    case SBIG('MULT'): f(PEType<IEMultiply>{}); return true;
+    case SBIG('SPAH'): f(PEType<IESampleAndHold>{}); return true;
+    case SBIG('RAND'): f(PEType<IERandom>{}); return true;
+    case SBIG('TSCL'): f(PEType<IETimeScale>{}); return true;
+    case SBIG('GTCP'): f(PEType<IEGTCP>{}); return true;
+    case SBIG('MODU'): f(PEType<IEModulo>{}); return true;
+    case SBIG('SUB_'): f(PEType<IESubtract>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IIntElement>& elemPtr) {}
 };
+extern template struct PEImpl<_IntElementFactory>;
 using IntElementFactory = PEImpl<_IntElementFactory>;
 
 struct IVectorElement : IElement {
   Delete _d2;
   static constexpr std::string_view TypeName = "VectorElement"sv;
 };
+struct VECone;
+struct VETimeChain;
+struct VEAngleCone;
+struct VEAdd;
+struct VECircleCluster;
+struct VEConstant;
+struct VECircle;
+struct VEKeyframeEmitter;
+struct VEKeyframeEmitter;
+struct VEMultiply;
+struct VERealToVector;
+struct VEPulse;
+struct VEParticleVelocity;
+struct VESPOS;
+struct VEPLCO;
+struct VEPLOC;
+struct VEPSOR;
+struct VEPSOF;
 struct _VectorElementFactory {
-  enum EPP : uint32_t {
-    CONE = SBIG('CONE'),
-    CHAN = SBIG('CHAN'),
-    ANGC = SBIG('ANGC'),
-    ADD_ = SBIG('ADD_'),
-    CCLU = SBIG('CCLU'),
-    CNST = SBIG('CNST'),
-    CIRC = SBIG('CIRC'),
-    KEYE = SBIG('KEYE'),
-    KEYP = SBIG('KEYP'),
-    MULT = SBIG('MULT'),
-    RTOV = SBIG('RTOV'),
-    PULS = SBIG('PULS'),
-    PVEL = SBIG('PVEL'),
-    SPOS = SBIG('SPOS'),
-    PLCO = SBIG('PLCO'),
-    PLOC = SBIG('PLOC'),
-    PSOR = SBIG('PSOR'),
-    PSOF = SBIG('PSOF'),
-  };
-  using Elements = PESet<
-      IVectorElement, std::tuple<
-          PE<CONE, struct VECone>,
-          PE<CHAN, struct VETimeChain>,
-          PE<ANGC, struct VEAngleCone>,
-          PE<ADD_, struct VEAdd>,
-          PE<CCLU, struct VECircleCluster>,
-          PE<CNST, struct VEConstant>,
-          PE<CIRC, struct VECircle>,
-          PE<KEYE, struct VEKeyframeEmitter>,
-          PE<KEYP, struct VEKeyframeEmitter>,
-          PE<MULT, struct VEMultiply>,
-          PE<RTOV, struct VERealToVector>,
-          PE<PULS, struct VEPulse>,
-          PE<PVEL, struct VEParticleVelocity>,
-          PE<SPOS, struct VESPOS>,
-          PE<PLCO, struct VEPLCO>,
-          PE<PLOC, struct VEPLOC>,
-          PE<PSOR, struct VEPSOR>,
-          PE<PSOF, struct VEPSOF>>,
-      ADD_, ANGC, CCLU, CHAN, CIRC, CNST, CONE, KEYE, KEYP, MULT, PLCO, PLOC, PSOF, PSOR, PULS, PVEL, RTOV, SPOS>;
+  using PtrType = IVectorElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('CONE'): f(PEType<VECone>{}); return true;
+    case SBIG('CHAN'): f(PEType<VETimeChain>{}); return true;
+    case SBIG('ANGC'): f(PEType<VEAngleCone>{}); return true;
+    case SBIG('ADD_'): f(PEType<VEAdd>{}); return true;
+    case SBIG('CCLU'): f(PEType<VECircleCluster>{}); return true;
+    case SBIG('CNST'): f(PEType<VEConstant>{}); return true;
+    case SBIG('CIRC'): f(PEType<VECircle>{}); return true;
+    case SBIG('KEYE'): f(PEType<VEKeyframeEmitter>{}); return true;
+    case SBIG('KEYP'): f(PEType<VEKeyframeEmitter>{}); return true;
+    case SBIG('MULT'): f(PEType<VEMultiply>{}); return true;
+    case SBIG('RTOV'): f(PEType<VERealToVector>{}); return true;
+    case SBIG('PULS'): f(PEType<VEPulse>{}); return true;
+    case SBIG('PVEL'): f(PEType<VEParticleVelocity>{}); return true;
+    case SBIG('SPOS'): f(PEType<VESPOS>{}); return true;
+    case SBIG('PLCO'): f(PEType<VEPLCO>{}); return true;
+    case SBIG('PLOC'): f(PEType<VEPLOC>{}); return true;
+    case SBIG('PSOR'): f(PEType<VEPSOR>{}); return true;
+    case SBIG('PSOF'): f(PEType<VEPSOF>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IVectorElement>& elemPtr) {}
 };
+extern template struct PEImpl<_VectorElementFactory>;
 using VectorElementFactory = PEImpl<_VectorElementFactory>;
 
 struct IColorElement : IElement {
   Delete _d2;
   static constexpr std::string_view TypeName = "ColorElement"sv;
 };
+struct CEKeyframeEmitter;
+struct CEKeyframeEmitter;
+struct CEConstant;
+struct CETimeChain;
+struct CEFadeEnd;
+struct CEFade;
+struct CEPulse;
 struct _ColorElementFactory {
-  enum EPP : uint32_t {
-    KEYE = SBIG('KEYE'),
-    KEYP = SBIG('KEYP'),
-    CNST = SBIG('CNST'),
-    CHAN = SBIG('CHAN'),
-    CFDE = SBIG('CFDE'),
-    FADE = SBIG('FADE'),
-    PULS = SBIG('PULS'),
-  };
-  using Elements = PESet<
-      IColorElement, std::tuple<
-          PE<KEYE, struct CEKeyframeEmitter>,
-          PE<KEYP, struct CEKeyframeEmitter>,
-          PE<CNST, struct CEConstant>,
-          PE<CHAN, struct CETimeChain>,
-          PE<CFDE, struct CEFadeEnd>,
-          PE<FADE, struct CEFade>,
-          PE<PULS, struct CEPulse>>,
-      CFDE, CHAN, CNST, FADE, KEYE, KEYP, PULS>;
+  using PtrType = IColorElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('KEYE'): f(PEType<CEKeyframeEmitter>{}); return true;
+    case SBIG('KEYP'): f(PEType<CEKeyframeEmitter>{}); return true;
+    case SBIG('CNST'): f(PEType<CEConstant>{}); return true;
+    case SBIG('CHAN'): f(PEType<CETimeChain>{}); return true;
+    case SBIG('CFDE'): f(PEType<CEFadeEnd>{}); return true;
+    case SBIG('FADE'): f(PEType<CEFade>{}); return true;
+    case SBIG('PULS'): f(PEType<CEPulse>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IColorElement>& elemPtr) {}
 };
+extern template struct PEImpl<_ColorElementFactory>;
 using ColorElementFactory = PEImpl<_ColorElementFactory>;
 
 struct IModVectorElement : IElement {
   Delete _d2;
   static constexpr std::string_view TypeName = "ModVectorElement"sv;
 };
+struct MVEImplosion;
+struct MVEExponentialImplosion;
+struct MVETimeChain;
+struct MVEBounce;
+struct MVEConstant;
+struct MVEGravity;
+struct MVEExplode;
+struct MVESetPosition;
+struct MVELinearImplosion;
+struct MVEPulse;
+struct MVEWind;
+struct MVESwirl;
 struct _ModVectorElementFactory {
-  enum EPP : uint32_t {
-    IMPL = SBIG('IMPL'),
-    EMPL = SBIG('EMPL'),
-    CHAN = SBIG('CHAN'),
-    BNCE = SBIG('BNCE'),
-    CNST = SBIG('CNST'),
-    GRAV = SBIG('GRAV'),
-    EXPL = SBIG('EXPL'),
-    SPOS = SBIG('SPOS'),
-    LMPL = SBIG('LMPL'),
-    PULS = SBIG('PULS'),
-    WIND = SBIG('WIND'),
-    SWRL = SBIG('SWRL'),
-  };
-  using Elements = PESet<
-      IModVectorElement, std::tuple<
-          PE<IMPL, struct MVEImplosion>,
-          PE<EMPL, struct MVEExponentialImplosion>,
-          PE<CHAN, struct MVETimeChain>,
-          PE<BNCE, struct MVEBounce>,
-          PE<CNST, struct MVEConstant>,
-          PE<GRAV, struct MVEGravity>,
-          PE<EXPL, struct MVEExplode>,
-          PE<SPOS, struct MVESetPosition>,
-          PE<LMPL, struct MVELinearImplosion>,
-          PE<PULS, struct MVEPulse>,
-          PE<WIND, struct MVEWind>,
-          PE<SWRL, struct MVESwirl>>,
-      BNCE, CHAN, CNST, EMPL, EXPL, GRAV, IMPL, LMPL, PULS, SPOS, SWRL, WIND>;
+  using PtrType = IModVectorElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('IMPL'): f(PEType<MVEImplosion>{}); return true;
+    case SBIG('EMPL'): f(PEType<MVEExponentialImplosion>{}); return true;
+    case SBIG('CHAN'): f(PEType<MVETimeChain>{}); return true;
+    case SBIG('BNCE'): f(PEType<MVEBounce>{}); return true;
+    case SBIG('CNST'): f(PEType<MVEConstant>{}); return true;
+    case SBIG('GRAV'): f(PEType<MVEGravity>{}); return true;
+    case SBIG('EXPL'): f(PEType<MVEExplode>{}); return true;
+    case SBIG('SPOS'): f(PEType<MVESetPosition>{}); return true;
+    case SBIG('LMPL'): f(PEType<MVELinearImplosion>{}); return true;
+    case SBIG('PULS'): f(PEType<MVEPulse>{}); return true;
+    case SBIG('WIND'): f(PEType<MVEWind>{}); return true;
+    case SBIG('SWRL'): f(PEType<MVESwirl>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IModVectorElement>& elemPtr) {}
 };
+extern template struct PEImpl<_ModVectorElementFactory>;
 using ModVectorElementFactory = PEImpl<_ModVectorElementFactory>;
 
 struct IEmitterElement : IElement {
   Delete _d2;
   static constexpr std::string_view TypeName = "EmitterElement"sv;
 };
+struct EESimpleEmitterTR;
+struct EESimpleEmitter;
+struct VESphere;
+struct VEAngleSphere;
 struct _EmitterElementFactory {
-  enum EPP : uint32_t {
-    SETR = SBIG('SETR'),
-    SEMR = SBIG('SEMR'),
-    SPHE = SBIG('SPHE'),
-    ASPH = SBIG('ASPH'),
-  };
-  using Elements = PESet<
-      IEmitterElement, std::tuple<
-          PE<SETR, struct EESimpleEmitterTR>,
-          PE<SEMR, struct EESimpleEmitter>,
-          PE<SPHE, struct VESphere>,
-          PE<ASPH, struct VEAngleSphere>>,
-      ASPH, SEMR, SETR, SPHE>;
+  using PtrType = IEmitterElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('SETR'): f(PEType<EESimpleEmitterTR>{}); return true;
+    case SBIG('SEMR'): f(PEType<EESimpleEmitter>{}); return true;
+    case SBIG('SPHE'): f(PEType<VESphere>{}); return true;
+    case SBIG('ASPH'): f(PEType<VEAngleSphere>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IEmitterElement>& elemPtr) {}
 };
+extern template struct PEImpl<_EmitterElementFactory>;
 using EmitterElementFactory = PEImpl<_EmitterElementFactory>;
 
 struct IUVElement : IElement {
@@ -1505,21 +1300,23 @@ struct UVEAnimTexture : IUVElement {
 
 template <class IDType>
 struct _UVElementFactory {
-  enum EPP : uint32_t {
-    CNST = SBIG('CNST'),
-    ATEX = SBIG('ATEX'),
-  };
-  using Elements = PESet<
-      IUVElement, std::tuple<
-          PE<CNST, struct UVEConstant<IDType>>,
-          PE<ATEX, struct UVEAnimTexture<IDType>>>,
-      ATEX, CNST>;
+  using PtrType = IUVElement;
+  template<typename _Func>
+  static bool constexpr Lookup(FourCC fcc, _Func f) {
+    switch (fcc.toUint32()) {
+    case SBIG('CNST'): f(PEType<UVEConstant<IDType>>{}); return true;
+    case SBIG('ATEX'): f(PEType<UVEAnimTexture<IDType>>{}); return true;
+    default: return false;
+    }
+  }
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IUVElement>& elemPtr) {
     if (elemPtr)
       elemPtr->gatherDependencies(pathsOut);
   }
 };
+extern template struct PEImpl<_UVElementFactory<UniqueID32>>;
+extern template struct PEImpl<_UVElementFactory<UniqueID64>>;
 template <class IDType>
 using UVElementFactory = PEImpl<_UVElementFactory<IDType>>;
 

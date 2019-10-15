@@ -8,8 +8,8 @@
 
 namespace DataSpec::DNAParticle {
 
-template struct CPImpl<_CRSM<UniqueID32>>;
-template struct CPImpl<_CRSM<UniqueID64>>;
+template struct PPImpl<_CRSM<UniqueID32>>;
+template struct PPImpl<_CRSM<UniqueID64>>;
 
 AT_SUBSPECIALIZE_DNA_YAML(PPImpl<_CRSM<UniqueID32>>)
 AT_SUBSPECIALIZE_DNA_YAML(PPImpl<_CRSM<UniqueID64>>)

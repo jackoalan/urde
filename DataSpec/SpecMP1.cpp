@@ -529,86 +529,80 @@ struct SpecMP1 : SpecBase {
 
       urde::SObjectTag resTag;
       if (reader.ClassTypeOperation([&](std::string_view className) {
-            if (className == DNAParticle::GPSM<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('PART');
-              return true;
-            }
-            if (className == DNAParticle::SWSH<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('SWHC');
-              return true;
-            }
-            if (className == DNAParticle::ELSM<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('ELSC');
-              return true;
-            }
-            if (className == DNAParticle::WPSM<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('WPSC');
-              return true;
-            }
-            if (className == DNAParticle::CRSM<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('CRSC');
-              return true;
-            }
-            if (className == DNAParticle::DPSM<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('DPSC');
-              return true;
-            } else if (className == DNAFont::FONT<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('FONT');
-              return true;
-            } else if (className == DNAMP1::EVNT::DNAType()) {
-              resTag.type = SBIG('EVNT');
-              return true;
-            } else if (className == DNADGRP::DGRP<UniqueID32>::DNAType()) {
-              resTag.type = SBIG('DGRP');
-              return true;
-            } else if (className == DataSpec::DNAMP1::STRG::DNAType()) {
-              resTag.type = SBIG('STRG');
-              return true;
-            } else if (className == DataSpec::DNAMP1::SCAN::DNAType()) {
-              resTag.type = SBIG('SCAN');
-              return true;
-            } else if (className == DataSpec::DNAMP1::CTweakPlayerRes::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakGunRes::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakSlideShow::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakPlayer::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakCameraBob::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakGame::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakTargeting::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakAutoMapper::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakGui::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakPlayerControl::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakBall::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakParticle::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakGuiColors::DNAType() ||
-                       className == DataSpec::DNAMP1::CTweakPlayerGun::DNAType()) {
-              resTag.type = SBIG('CTWK');
-              return true;
-            } else if (className == DataSpec::DNAMP1::MazeSeeds::DNAType() ||
-                       className == DataSpec::DNAMP1::SnowForces::DNAType()) {
-              resTag.type = SBIG('DUMB');
-              return true;
-            } else if (className == DataSpec::DNAMP1::HINT::DNAType()) {
-              resTag.type = SBIG('HINT');
-              return true;
-            } else if (className == "ATBL") {
-              resTag.type = SBIG('ATBL');
-              return true;
-            } else if (className == DataSpec::DNAMP1::AFSM::DNAType()) {
-              resTag.type = SBIG('AFSM');
-              return true;
-            } else if (className == "MP1TextureCache") {
-              resTag.type = SBIG('TMET');
-              return true;
-            } else if (className == "DataSpec::DNAMP1::SAVW") {
-              resTag.type = SBIG('SAVW');
-              return true;
-            } else if (className == "DataSpec::DNAMP1::MAPW") {
-              resTag.type = SBIG('MAPW');
-              return true;
-            }
-
-            return false;
-          })) {
+        if (className == DNAParticle::GPSM<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('PART');
+          return true;
+        } else if (className == DNAParticle::SWSH<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('SWHC');
+          return true;
+        } else if (className == DNAParticle::ELSM<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('ELSC');
+          return true;
+        } else if (className == DNAParticle::WPSM<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('WPSC');
+          return true;
+        } else if (className == DNAParticle::CRSM<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('CRSC');
+          return true;
+        } else if (className == DNAParticle::DPSM<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('DPSC');
+          return true;
+        } else if (className == DNAFont::FONT<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('FONT');
+          return true;
+        } else if (className == DNAMP1::EVNT::DNAType()) {
+          resTag.type = SBIG('EVNT');
+          return true;
+        } else if (className == DNADGRP::DGRP<UniqueID32>::DNAType()) {
+          resTag.type = SBIG('DGRP');
+          return true;
+        } else if (className == DataSpec::DNAMP1::STRG::DNAType()) {
+          resTag.type = SBIG('STRG');
+          return true;
+        } else if (className == DataSpec::DNAMP1::SCAN::DNAType()) {
+          resTag.type = SBIG('SCAN');
+          return true;
+        } else if (className == DataSpec::DNAMP1::CTweakPlayerRes::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakGunRes::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakSlideShow::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakPlayer::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakCameraBob::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakGame::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakTargeting::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakAutoMapper::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakGui::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakPlayerControl::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakBall::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakParticle::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakGuiColors::DNAType() ||
+                   className == DataSpec::DNAMP1::CTweakPlayerGun::DNAType()) {
+          resTag.type = SBIG('CTWK');
+          return true;
+        } else if (className == DataSpec::DNAMP1::MazeSeeds::DNAType() ||
+                   className == DataSpec::DNAMP1::SnowForces::DNAType()) {
+          resTag.type = SBIG('DUMB');
+          return true;
+        } else if (className == DataSpec::DNAMP1::HINT::DNAType()) {
+          resTag.type = SBIG('HINT');
+          return true;
+        } else if (className == "ATBL") {
+          resTag.type = SBIG('ATBL');
+          return true;
+        } else if (className == DataSpec::DNAMP1::AFSM::DNAType()) {
+          resTag.type = SBIG('AFSM');
+          return true;
+        } else if (className == "MP1TextureCache") {
+          resTag.type = SBIG('TMET');
+          return true;
+        } else if (className == "DataSpec::DNAMP1::SAVW") {
+          resTag.type = SBIG('SAVW');
+          return true;
+        } else if (className == "DataSpec::DNAMP1::MAPW") {
+          resTag.type = SBIG('MAPW');
+          return true;
+        }
+        return false;
+      })) {
         resTag.id = path.parsedHash32();
         fp.reset();
         return resTag;
