@@ -51,6 +51,10 @@ else()
 endif()
 
 if(MSVC)
+  # Override CMake defaults to disable RTTI
+  set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W3 /GR-" CACHE STRING
+      "Flags used by the CXX compiler during all build types." FORCE)
+  
   if(${URDE_VECTOR_ISA} STREQUAL "avx2")
     add_compile_options(/arch:AVX2)
     add_compile_definitions(__SSE4_1__=1)
@@ -75,9 +79,10 @@ if(MSVC)
   add_compile_definitions(UNICODE=1 _UNICODE=1 __SSE__=1
       _CRT_SECURE_NO_WARNINGS=1 D_SCL_SECURE_NO_WARNINGS=1
       _SCL_SECURE_NO_DEPRECATE=1 _CRT_NONSTDC_NO_WARNINGS=1
-      _ENABLE_EXTENDED_ALIGNED_STORAGE=1)
+      _ENABLE_EXTENDED_ALIGNED_STORAGE=1 NOMINMAX=1 _HAS_EXCEPTIONS=0)
   add_compile_options(/IGNORE:4221 /wd4018 /wd4800 /wd4005 /wd4311 /wd4068
-      /wd4267 /wd4244 /wd4200 /wd4305 /wd4067 /wd4146 /wd4309 /wd4805 ${VS_OPTIONS})
+      /wd4267 /wd4244 /wd4200 /wd4305 /wd4067 /wd4146 /wd4309 /wd4805 /wd4661
+	  /wd5045 ${VS_OPTIONS})
 
   if(WINDOWS_STORE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /AI\"$ENV{PROGRAMFILES\(X86\)}/Microsoft Visual Studio/2017/Community/Common7/IDE/VC/vcpackages\" /AI\"$ENV{PROGRAMFILES\(X86\)}/Windows Kits/10/UnionMetadata\"")

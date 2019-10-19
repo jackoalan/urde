@@ -115,8 +115,6 @@ struct _SWSH {
     }
   }
 };
-extern template struct PPImpl<_SWSH<UniqueID32>>;
-extern template struct PPImpl<_SWSH<UniqueID64>>;
 template <class IDType>
 using SWSH = PPImpl<_SWSH<IDType>>;
 

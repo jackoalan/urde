@@ -89,8 +89,6 @@ struct _ELSM {
     }
   }
 };
-extern template struct PPImpl<_ELSM<UniqueID32>>;
-extern template struct PPImpl<_ELSM<UniqueID64>>;
 template <class IDType>
 using ELSM = PPImpl<_ELSM<IDType>>;
 

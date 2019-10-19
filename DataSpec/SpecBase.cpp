@@ -307,20 +307,22 @@ void SpecBase::flattenDependenciesBlend(const hecl::ProjectPath& in, std::vector
         }
 
         hecl::SystemStringConv chSysName(sub.name);
-        pathsOut.push_back(asGlob.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.CSKR")), chSysName, sub.cskrId)));
+        hecl::SystemStringConv sysCskrId(sub.cskrId);
+        pathsOut.push_back(asGlob.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.CSKR")), chSysName, sysCskrId)));
 
         const auto& arm = actor.armatures[sub.armature];
         if (hecl::IsPathBlend(arm.path))
           pathsOut.push_back(arm.path);
 
         for (const auto& overlay : sub.overlayMeshes) {
-          hecl::SystemStringConv overlaySys(overlay.name);
           if (hecl::IsPathBlend(overlay.mesh)) {
             flattenDependenciesBlend(overlay.mesh, pathsOut, btok);
             pathsOut.push_back(overlay.mesh);
           }
+          hecl::SystemStringConv overlaySys(overlay.name);
+          hecl::SystemStringConv sysCskrId(overlay.cskrId);
           pathsOut.push_back(asGlob.ensureAuxInfo(
-              fmt::format(fmt(_SYS_STR("{}.{}_{}.CSKR")), chSysName, overlaySys, overlay.cskrId)));
+              fmt::format(fmt(_SYS_STR("{}.{}_{}.CSKR")), chSysName, overlaySys, sysCskrId)));
         }
       }
     };
@@ -337,8 +339,8 @@ void SpecBase::flattenDependenciesBlend(const hecl::ProjectPath& in, std::vector
       }
 
       hecl::SystemStringConv chSysName(att.name);
-      pathsOut.push_back(
-          asGlob.ensureAuxInfo(fmt::format(fmt(_SYS_STR("ATTACH.{}_{}.CSKR")), chSysName, att.cskrId)));
+      hecl::SystemStringConv sysCskrId(att.cskrId);
+      pathsOut.push_back(asGlob.ensureAuxInfo(fmt::format(fmt(_SYS_STR("ATTACH.{}_{}.CSKR")), chSysName, sysCskrId)));
 
       if (att.armature >= 0) {
         const auto& arm = actor.armatures[att.armature];

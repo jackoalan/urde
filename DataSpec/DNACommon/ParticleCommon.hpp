@@ -41,7 +41,7 @@ struct PPImpl : BigDNA, _Basis {
     }
   }
 
-  void _read(athena::io::IStreamReader& r) {
+  constexpr void _read(athena::io::IStreamReader& r) {
     constexpr FourCC RefType = uint32_t(_Basis::Type);
     DNAFourCC clsId;
     clsId.read(r);
@@ -72,7 +72,7 @@ struct PPImpl : BigDNA, _Basis {
     }
   }
 
-  void _write(athena::io::IStreamWriter& w) {
+  constexpr void _write(athena::io::IStreamWriter& w) {
     constexpr DNAFourCC RefType = uint32_t(_Basis::Type);
     RefType.write(w);
     _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
@@ -96,7 +96,7 @@ struct PPImpl : BigDNA, _Basis {
     w.writeBytes("_END", 4);
   }
 
-  void _binarySize(std::size_t& s) {
+  constexpr void _binarySize(std::size_t& s) {
     constexpr DNAFourCC RefType = uint32_t(_Basis::Type);
     RefType.binarySize(s);
     _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
@@ -146,7 +146,7 @@ struct PPImpl : BigDNA, _Basis {
     }
   }
 
-  void _write(athena::io::YAMLDocWriter& w) {
+  constexpr void _write(athena::io::YAMLDocWriter& w) {
     _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
       if (_shouldStore(p, defaultBool)) {
         using Tp = std::decay_t<decltype(p)>;
@@ -165,7 +165,7 @@ struct PPImpl : BigDNA, _Basis {
     });
   }
 
-  void gatherDependencies(std::vector<hecl::ProjectPath>& deps) {
+  constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& deps) {
     _Basis::Enumerate([&](FourCC fcc, auto& p, bool defaultBool = false) {
       using Tp = std::decay_t<decltype(p)>;
       if constexpr (!std::is_same_v<Tp, bool> && !std::is_same_v<Tp, uint32_t> && !std::is_same_v<Tp, float>)
@@ -173,8 +173,8 @@ struct PPImpl : BigDNA, _Basis {
     });
   }
 
-  void gatherDependencies(std::vector<hecl::ProjectPath>& deps) const {
-    const_cast<std::remove_const_t<decltype(*this)>>(*this).gatherDependencies(deps);
+  constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& deps) const {
+    const_cast<PPImpl&>(*this).gatherDependencies(deps);
   }
 };
 
@@ -350,7 +350,6 @@ struct _RealElementFactory {
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IRealElement>& elemPtr) {}
 };
-extern template struct PEImpl<_RealElementFactory>;
 using RealElementFactory = PEImpl<_RealElementFactory>;
 
 struct IIntElement : IElement {
@@ -404,7 +403,6 @@ struct _IntElementFactory {
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IIntElement>& elemPtr) {}
 };
-extern template struct PEImpl<_IntElementFactory>;
 using IntElementFactory = PEImpl<_IntElementFactory>;
 
 struct IVectorElement : IElement {
@@ -458,7 +456,6 @@ struct _VectorElementFactory {
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IVectorElement>& elemPtr) {}
 };
-extern template struct PEImpl<_VectorElementFactory>;
 using VectorElementFactory = PEImpl<_VectorElementFactory>;
 
 struct IColorElement : IElement {
@@ -490,7 +487,6 @@ struct _ColorElementFactory {
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IColorElement>& elemPtr) {}
 };
-extern template struct PEImpl<_ColorElementFactory>;
 using ColorElementFactory = PEImpl<_ColorElementFactory>;
 
 struct IModVectorElement : IElement {
@@ -532,7 +528,6 @@ struct _ModVectorElementFactory {
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IModVectorElement>& elemPtr) {}
 };
-extern template struct PEImpl<_ModVectorElementFactory>;
 using ModVectorElementFactory = PEImpl<_ModVectorElementFactory>;
 
 struct IEmitterElement : IElement {
@@ -558,7 +553,6 @@ struct _EmitterElementFactory {
   static constexpr void gatherDependencies(std::vector<hecl::ProjectPath>& pathsOut,
                                            const std::unique_ptr<IEmitterElement>& elemPtr) {}
 };
-extern template struct PEImpl<_EmitterElementFactory>;
 using EmitterElementFactory = PEImpl<_EmitterElementFactory>;
 
 struct IUVElement : IElement {
@@ -1315,8 +1309,6 @@ struct _UVElementFactory {
       elemPtr->gatherDependencies(pathsOut);
   }
 };
-extern template struct PEImpl<_UVElementFactory<UniqueID32>>;
-extern template struct PEImpl<_UVElementFactory<UniqueID64>>;
 template <class IDType>
 using UVElementFactory = PEImpl<_UVElementFactory<IDType>>;
 

@@ -279,8 +279,6 @@ struct _GPSM {
     }
   }
 };
-extern template struct PPImpl<_GPSM<UniqueID32>>;
-extern template struct PPImpl<_GPSM<UniqueID64>>;
 template <class IDType>
 using GPSM = PPImpl<_GPSM<IDType>>;
 

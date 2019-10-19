@@ -133,8 +133,6 @@ struct _WPSM {
     }
   }
 };
-extern template struct PPImpl<_WPSM<UniqueID32>>;
-extern template struct PPImpl<_WPSM<UniqueID64>>;
 template <class IDType>
 using WPSM = PPImpl<_WPSM<IDType>>;
 

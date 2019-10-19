@@ -98,8 +98,6 @@ struct _DPSM {
     }
   }
 };
-extern template struct PPImpl<_DPSM<UniqueID32>>;
-extern template struct PPImpl<_DPSM<UniqueID64>>;
 template <class IDType>
 using DPSM = PPImpl<_DPSM<IDType>>;
 

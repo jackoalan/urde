@@ -1018,7 +1018,8 @@ bool ANCS::Cook(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPat
     for (const DNAANCS::Actor::Subtype& sub : actor.subtypes) {
       if (sub.name == ch.name) {
         hecl::SystemStringConv chSysName(ch.name);
-        ch.cskr = inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.CSKR")), chSysName, sub.cskrId));
+        hecl::SystemStringConv cskrIdSys(sub.cskrId);
+        ch.cskr = inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.CSKR")), chSysName, cskrIdSys));
 
         /* Add subtype AABBs */
         ch.animAABBs.reserve(actor.actions.size());
@@ -1039,9 +1040,10 @@ bool ANCS::Cook(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPat
                                      [](const auto& p) { return p.name == "ICE"; });
           if (search != sub.overlayMeshes.cend()) {
             hecl::SystemStringConv overlaySys(search->name);
+            hecl::SystemStringConv cskrIdSys(search->cskrId);
             ch.cmdlIce = search->mesh;
-            ch.cskrIce = inPath.ensureAuxInfo(
-                fmt::format(fmt(_SYS_STR("{}.{}_{}.CSKR")), chSysName, overlaySys, search->cskrId));
+            ch.cskrIce =
+                inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}.{}_{}.CSKR")), chSysName, overlaySys, cskrIdSys));
           }
         }
 
@@ -1060,7 +1062,8 @@ bool ANCS::Cook(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPat
     hecl::SystemStringConv sysStr(prim.animName);
     for (const DNAANCS::Action& act : actor.actions) {
       if (act.name == prim.animName) {
-        hecl::ProjectPath pathOut = inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.ANIM")), sysStr, act.animId));
+        hecl::SystemStringConv animIdSys(act.animId);
+        hecl::ProjectPath pathOut = inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.ANIM")), sysStr, animIdSys));
         prim.animId = pathOut;
         break;
       }
@@ -1073,14 +1076,15 @@ bool ANCS::Cook(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPat
   ancs.animationSet.animResources.reserve(actor.actions.size());
   for (const DNAANCS::Action& act : actor.actions) {
     hecl::SystemStringConv sysStr(act.name);
-    hecl::ProjectPath pathOut = inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.ANIM")), sysStr, act.animId));
+    hecl::SystemStringConv animIdSys(act.animId);
+    hecl::ProjectPath pathOut = inPath.ensureAuxInfo(fmt::format(fmt(_SYS_STR("{}_{}.ANIM")), sysStr, animIdSys));
 
     ancs.animationSet.animResources.emplace_back();
     ancs.animationSet.animResources.back().animId = pathOut;
 
     /* Check for associated EVNT YAML */
-    hecl::SystemString testPrefix(inPath.getWithExtension(
-        fmt::format(fmt(_SYS_STR(".{}_")), sysStr).c_str(), true).getLastComponent());
+    hecl::SystemString testPrefix(
+        inPath.getWithExtension(fmt::format(fmt(_SYS_STR(".{}_")), sysStr).c_str(), true).getLastComponent());
     hecl::ProjectPath evntYamlPath;
     for (const auto& ent : dEnum) {
       if (hecl::StringUtils::BeginsWith(ent.m_name, testPrefix.c_str()) &&
@@ -1104,8 +1108,7 @@ bool ANCS::Cook(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPat
 
 static const hecl::SystemRegex regCskrNameId(_SYS_STR(R"((.*)_[0-9a-fA-F]{8}\.CSKR)"),
                                              std::regex::ECMAScript | std::regex::optimize);
-static const hecl::SystemRegex regCskrName(_SYS_STR(R"((.*)\.CSKR)"),
-                                           std::regex::ECMAScript | std::regex::optimize);
+static const hecl::SystemRegex regCskrName(_SYS_STR(R"((.*)\.CSKR)"), std::regex::ECMAScript | std::regex::optimize);
 
 bool ANCS::CookCSKR(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPath, const DNAANCS::Actor& actor,
                     const std::function<bool(const hecl::ProjectPath& modelPath)>& modelCookFunc) {
@@ -1198,8 +1201,7 @@ bool ANCS::CookCSKR(const hecl::ProjectPath& outPath, const hecl::ProjectPath& i
         const std::string& name = boneNames[bIdx];
         auto search = boneIdMap.find(name);
         if (search == boneIdMap.cend())
-          Log.report(logvisor::Fatal, fmt("unable to find bone '{}' in {}"), name,
-                     inPath.getRelativePathUTF8());
+          Log.report(logvisor::Fatal, fmt("unable to find bone '{}' in {}"), name, inPath.getRelativePathUTF8());
         virtualBone.first.emplace_back(search->second, weight);
       }
       virtualBone.second = skinIO.readUint32Big();
@@ -1337,8 +1339,7 @@ bool ANCS::CookCSKRPC(const hecl::ProjectPath& outPath, const hecl::ProjectPath&
         const std::string& name = boneNames[bIdx];
         auto search = boneIdMap.find(name);
         if (search == boneIdMap.cend())
-          Log.report(logvisor::Fatal, fmt("unable to find bone '{}' in {}"), name,
-                     inPath.getRelativePathUTF8());
+          Log.report(logvisor::Fatal, fmt("unable to find bone '{}' in {}"), name, inPath.getRelativePathUTF8());
         virtualBone.emplace_back(search->second, weight);
       }
     }
@@ -1358,8 +1359,7 @@ bool ANCS::CookCSKRPC(const hecl::ProjectPath& outPath, const hecl::ProjectPath&
       const std::string& name = boneNames[bIdx];
       auto search = boneIdMap.find(name);
       if (search == boneIdMap.cend())
-        Log.report(logvisor::Fatal, fmt("unable to find bone '{}' in {}"), name,
-                   inPath.getRelativePathUTF8());
+        Log.report(logvisor::Fatal, fmt("unable to find bone '{}' in {}"), name, inPath.getRelativePathUTF8());
       skinOut.writeUint32Big(search->second);
     }
   }
@@ -1381,8 +1381,7 @@ bool ANCS::CookCSKRPC(const hecl::ProjectPath& outPath, const hecl::ProjectPath&
 
 static const hecl::SystemRegex regAnimNameId(_SYS_STR(R"((.*)_[0-9a-fA-F]{8}\.ANIM)"),
                                              std::regex::ECMAScript | std::regex::optimize);
-static const hecl::SystemRegex regAnimName(_SYS_STR(R"((.*)\.ANIM)"),
-                                           std::regex::ECMAScript | std::regex::optimize);
+static const hecl::SystemRegex regAnimName(_SYS_STR(R"((.*)\.ANIM)"), std::regex::ECMAScript | std::regex::optimize);
 
 bool ANCS::CookANIM(const hecl::ProjectPath& outPath, const hecl::ProjectPath& inPath, const DNAANCS::Actor& actor,
                     hecl::blender::DataStream& ds, bool pc) {
@@ -1416,8 +1415,8 @@ bool ANCS::CookANIM(const hecl::ProjectPath& outPath, const hecl::ProjectPath& i
   ANIM anim(action, boneIdMap, *rigInv, pc);
 
   /* Check for associated EVNT YAML */
-  hecl::SystemString testPrefix(inPath.getWithExtension(
-      fmt::format(fmt(_SYS_STR(".{}_")), actName).c_str(), true).getLastComponent());
+  hecl::SystemString testPrefix(
+      inPath.getWithExtension(fmt::format(fmt(_SYS_STR(".{}_")), actName).c_str(), true).getLastComponent());
   hecl::ProjectPath evntYamlPath;
   for (const auto& ent : hecl::DirectoryEnumerator(inPath.getParentPath().getAbsolutePath())) {
     if (hecl::StringUtils::BeginsWith(ent.m_name, testPrefix.c_str()) &&

@@ -631,8 +631,6 @@ struct _CRSM {
     }
   }
 };
-extern template struct PPImpl<_CRSM<UniqueID32>>;
-extern template struct PPImpl<_CRSM<UniqueID64>>;
 template <class IDType>
 using CRSM = PPImpl<_CRSM<IDType>>;
 
