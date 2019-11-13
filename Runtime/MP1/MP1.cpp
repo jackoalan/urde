@@ -61,6 +61,8 @@
 #include "CStopwatch.hpp"
 #include <discord_rpc.h>
 
+#include "Runtime/MP1/CCredits.hpp"
+
 namespace hecl {
 extern CVar* com_enableCheats;
 extern CVar* com_developer;
@@ -87,7 +89,9 @@ CGameArchitectureSupport::CGameArchitectureSupport(CMain& parent, boo::IAudioVoi
   CStreamAudioManager::Initialize();
   CStreamAudioManager::SetMusicVolume(0x7f);
   m->ResetGameState();
-
+  std::shared_ptr<CCredits> credits = std::make_shared<CCredits>();
+  x58_ioWinManager.AddIOWin(credits, 1000, 10000);
+#if 0
   if (!g_tweakGame->GetSplashScreensDisabled()) {
     std::shared_ptr<CIOWin> splash = std::make_shared<CSplashScreen>(CSplashScreen::ESplashScreen::Nintendo);
     x58_ioWinManager.AddIOWin(splash, 1000, 10000);
@@ -104,7 +108,7 @@ CGameArchitectureSupport::CGameArchitectureSupport(CMain& parent, boo::IAudioVoi
 
   std::shared_ptr<CIOWin> errWin = std::make_shared<CErrorOutputWindow>(false);
   x58_ioWinManager.AddIOWin(errWin, 10000, 100000);
-
+#endif
   g_GuiSys = &x44_guiSys;
   g_GameState->GameOptions().EnsureSettings();
 }

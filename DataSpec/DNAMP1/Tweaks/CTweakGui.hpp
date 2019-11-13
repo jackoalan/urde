@@ -308,6 +308,9 @@ struct CTweakGui final : ITweakGui {
     return x2c4_scanSpeeds[idx];
   }
 
+  std::string_view GetCreditsTable() const { return x2e0_; }
+  std::string_view GetCreditsFont() const { return x2f0_; }
+
   void FixupValues() {
     xd8_ = zeus::degToRad(xd8_);
     xdc_ = zeus::degToRad(xdc_);
