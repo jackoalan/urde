@@ -41,6 +41,7 @@ class CMagdolite : public CPatterned {
   float x748_;
   float x74c_;
   u32 x750_ = 0;
+#if 0
   bool x754_24_ : 1 = false;
   bool x754_25_ : 1 = false;
   bool x754_26_ : 1 = false;
@@ -48,6 +49,14 @@ class CMagdolite : public CPatterned {
   bool x754_28_ : 1 = false;
   bool x754_29_ : 1 = true;
   bool x754_30_ : 1 = false;
+#else
+  bool x754_25_  = false;
+  bool x754_26_  = false;
+  bool x754_27_  = false;
+  bool x754_28_  = false;
+  bool x754_29_  = true;
+  bool x754_30_  = false;
+#endif
   float x758_ = 0.f;
 
   void ApplyContactDamage(TUniqueId uid, CStateManager& mgr);
