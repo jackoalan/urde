@@ -14,7 +14,7 @@ namespace urde::MP1 {
 CPuffer::CPuffer(TUniqueId uid, std::string_view name, const CEntityInfo& info, const zeus::CTransform& xf,
                  CModelData&& modelData, const CActorParameters& actorParameters, const CPatternedInfo& patternedInfo,
                  float hoverSpeed, CAssetId cloudEffect, const CDamageInfo& cloudDamage, CAssetId cloudSteam, float f2,
-                 bool b1, bool b2, bool b3, const CDamageInfo& explosionDamage, s16 sfxId)
+                 bool b1, bool b2, bool b3, const CDamageInfo& explosionDamage, s16 sound_Turn)
 : CPatterned(ECharacter::Puffer, uid, name, EFlavorType::Zero, info, xf, std::move(modelData), patternedInfo,
              EMovementType::Flyer, EColliderType::One, EBodyType::RestrictedFlyer, actorParameters,
              EKnockBackVariant::Small)
@@ -24,7 +24,7 @@ CPuffer::CPuffer(TUniqueId uid, std::string_view name, const CEntityInfo& info, 
 , x598_24_(b1)
 , x598_25_(b3)
 , x598_26_(b2)
-, x59a_(CSfxManager::TranslateSFXID(sfxId))
+, x59a_Sound_Turn(CSfxManager::TranslateSFXID(sound_Turn))
 , x59c_explosionDamage(explosionDamage)
 , x5b8_(f2)
 , x5bc_cloudSteam(cloudSteam) {
@@ -59,9 +59,9 @@ void CPuffer::Think(float dt, CStateManager& mgr) {
   sub8025bfa4(mgr);
   zeus::CVector3f moveVector = x450_bodyController->GetCommandMgr().GetMoveVector();
 
-  if (x5cc_ != x2dc_destObj) {
-    x5cc_ = x2dc_destObj;
-    CSfxManager::AddEmitter(x59a_, GetTranslation(), {}, true, false, 127, -1);
+  if (x5cc_lastDestObj != x2dc_destObj) {
+    x5cc_lastDestObj = x2dc_destObj;
+    CSfxManager::AddEmitter(x59a_Sound_Turn, GetTranslation(), {}, true, false, 127, -1);
   }
 
   x450_bodyController->GetCommandMgr().ClearLocomotionCmds();

@@ -15,12 +15,12 @@ class CPuffer : public CPatterned {
   bool x598_24_ : 1;
   bool x598_25_ : 1;
   bool x598_26_ : 1;
-  s16 x59a_;
+  s16 x59a_Sound_Turn;
   CDamageInfo x59c_explosionDamage;
   float x5b8_;
   CAssetId x5bc_cloudSteam;
   zeus::CVector3f x5c0_move;
-  TUniqueId x5cc_ = kInvalidUniqueId;
+  TUniqueId x5cc_lastDestObj = kInvalidUniqueId;
   s32 x5d0_enabledParticles = 0;
   rstl::reserved_vector<zeus::CVector3f, 14> x5d4_gasLocators;
 
