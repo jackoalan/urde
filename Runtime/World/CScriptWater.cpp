@@ -152,7 +152,7 @@ void CScriptWater::SetupGridClipping(CStateManager& mgr, int computeVerts) {
   zeus::CAABox triggerBounds = GetTriggerBoundsWR();
   zeus::CVector3f basePos = triggerBounds.min;
   basePos.z() = triggerBounds.max.z() + 0.8f;
-  auto gridDiv = std::div(x2e4_computedGridCellCount, x2c4_gridDimX + 1);
+  auto gridDiv = urde::div(x2e4_computedGridCellCount, x2c4_gridDimX + 1);
   float yOffset = x2c0_tileSize * gridDiv.quot;
   float xOffset = x2c0_tileSize * gridDiv.rem;
   float mag = std::min(120.f, 2.f * (x130_bounds.max.z() - x130_bounds.min.z()) + 0.8f);

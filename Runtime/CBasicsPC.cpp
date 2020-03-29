@@ -93,7 +93,7 @@ OSTime CBasics::ToWiiTime(std::chrono::system_clock::time_point time) {
 }
 
 std::chrono::system_clock::time_point CBasics::FromWiiTime(OSTime wiiTime) {
-  auto div = std::lldiv(SECONDS_TO_2000 + wiiTime, TICKS_PER_SECOND);
+  auto div = urde::div(SECONDS_TO_2000 + wiiTime, TICKS_PER_SECOND);
   time_t time = time_t(div.quot);
 
   time_t sysTime = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -129,7 +129,7 @@ OSCalendarTime CBasics::ToCalendarTime(std::chrono::system_clock::time_point tim
   ret.x18_wday = timeSt->tm_wday;
   ret.x1c_yday = timeSt->tm_yday;
 
-  auto div = std::ldiv(us, 1000);
+  auto div = urde::div(us, decltype(us)(1000));
   ret.x20_msec = div.quot;
   ret.x24_usec = div.rem;
 

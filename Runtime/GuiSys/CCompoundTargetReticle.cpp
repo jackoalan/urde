@@ -533,7 +533,7 @@ void CCompoundTargetReticle::DrawCurrLockOnGroup(const zeus::CMatrix3f& rot, con
     zeus::CMatrix3f lockBreakRM;
     for (int i = 0; i < 4; ++i) {
       int a = rand() % 9;
-      auto b = std::div(a, 3);
+      auto b = urde::div(a, 3);
       lockBreakRM[b.rem][b.quot] += rand() / float(RAND_MAX) - 0.5f;
     }
     lockBreakXf = lockBreakRM.transposed();

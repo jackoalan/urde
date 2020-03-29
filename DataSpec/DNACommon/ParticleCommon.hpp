@@ -43,8 +43,7 @@ struct PPImpl : BigDNA, _Basis {
 
   constexpr void _read(athena::io::IStreamReader& r) {
     constexpr FourCC RefType = uint32_t(_Basis::Type);
-    DNAFourCC clsId;
-    clsId.read(r);
+    DNAFourCC clsId(r);
     if (clsId != RefType) {
       LogModule.report(logvisor::Warning, fmt("non {} provided to {} parser"), RefType, RefType);
       return;
@@ -54,14 +53,17 @@ struct PPImpl : BigDNA, _Basis {
       if (!_Basis::Lookup(clsId, [&](auto& p) {
         using Tp = std::decay_t<decltype(p)>;
         if constexpr (std::is_same_v<Tp, bool>) {
-          r.readUint32Big();
-          p = r.readBool();
+          DNAFourCC tp(r);
+          if (tp == SBIG('CNST'))
+            p = r.readBool();
         } else if constexpr (std::is_same_v<Tp, uint32_t>) {
-          r.readUint32Big();
-          p = r.readUint32Big();
+          DNAFourCC tp(r);
+          if (tp == SBIG('CNST'))
+            p = r.readUint32Big();
         } else if constexpr (std::is_same_v<Tp, float>) {
-          r.readUint32Big();
-          p = r.readFloatBig();
+          DNAFourCC tp(r);
+          if (tp == SBIG('CNST'))
+            p = r.readFloatBig();
         } else {
           p.read(r);
         }
@@ -189,8 +191,7 @@ struct PEImpl : BigDNA {
   using _PtrType = typename _Basis::PtrType;
 
   void _read(athena::io::IStreamReader& r) {
-    DNAFourCC clsId;
-    clsId.read(r);
+    DNAFourCC clsId(r);
     if (clsId == FOURCC('NONE')) {
       m_elem.reset();
       return;

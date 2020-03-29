@@ -1,6 +1,7 @@
 #include "CPathFindArea.hpp"
 #include "IVParamObj.hpp"
 #include "CToken.hpp"
+#include "CBasics.hpp"
 
 namespace urde {
 
@@ -258,7 +259,7 @@ bool CPFArea::PathExists(const CPFRegion* r1, const CPFRegion* r2, u32 flags) co
   u32 totalConnections = u32(x150_regions.size()) * (u32(x150_regions.size()) - 1) / 2;
   u32 bit = totalConnections - remConnections + i2 - (i1 + 1);
 
-  auto d = std::div(bit, 32);
+  auto d = urde::div(bit, u32(32));
   if ((flags & 0x2) != 0)
     return ((x170_connectionsFlyers[d.quot] >> d.rem) & 0x1) != 0;
   else

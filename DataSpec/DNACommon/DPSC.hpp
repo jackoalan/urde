@@ -94,6 +94,8 @@ struct _DPSM {
     case SBIG('DMRT'): f(x50_DMRT); return true;
     case SBIG('DMSC'): f(x54_DMSC); return true;
     case SBIG('DMCL'): f(x58_DMCL); return true;
+    case SBIG('DMAB'): f(x5c_24_DMAB); return true;
+    case SBIG('DMOO'): f(x5c_25_DMOO); return true;
     default: return false;
     }
   }

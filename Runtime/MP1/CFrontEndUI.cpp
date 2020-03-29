@@ -530,7 +530,7 @@ void CFrontEndUI::SNewFileSelectFrame::SetupFrameContents() {
           case 2:
           // Formatted time
           if (data) {
-            auto pt = std::div(data->x0_playTime, 3600);
+            auto pt = urde::div(int(data->x0_playTime), 3600);
             str = fmt::format(fmt(u"{:02d}:{:02d}:{:02d}"), pt.quot, pt.rem / 60, pt.rem % 60);
             break;
           }
@@ -544,7 +544,7 @@ void CFrontEndUI::SNewFileSelectFrame::SetupFrameContents() {
         case 2:
           // Formatted time
           if (data) {
-            auto pt = std::div(data->x0_playTime, 3600);
+            auto pt = urde::div(int(data->x0_playTime), 3600);
             str = hecl::Char16Format(L"%02d:%02d", pt.quot, pt.rem / 60);
             break;
           }

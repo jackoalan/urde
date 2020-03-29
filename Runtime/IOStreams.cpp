@@ -1,5 +1,6 @@
 #include "IOStreams.hpp"
 #include "hecl/hecl.hpp"
+#include "CBasics.hpp"
 
 namespace urde {
 
@@ -33,7 +34,7 @@ s32 CBitStreamReader::ReadEncoded(u32 bitCount) {
     ret |= (x1c_val << u32(-shiftAmt)) & mask;
 
     /* Load in exact number of bytes remaining */
-    auto loadDiv = std::div(-shiftAmt, 8);
+    auto loadDiv = urde::div(-shiftAmt, 8);
     if (loadDiv.rem)
       ++loadDiv.quot;
     readUBytesToBuf(reinterpret_cast<u8*>(&x1c_val) + 4 - loadDiv.quot, loadDiv.quot);
@@ -95,7 +96,7 @@ void CBitStreamWriter::WriteEncoded(u32 val, u32 bitCount) {
 
 void CBitStreamWriter::Flush() {
   if (x18_bitOffset < 0x20) {
-    auto pos = std::div(0x20 - x18_bitOffset, 8);
+    auto pos = urde::div(0x20 - x18_bitOffset, u32(8));
     if (pos.rem)
       ++pos.quot;
     x14_val = hecl::SBig(x14_val);

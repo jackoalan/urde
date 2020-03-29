@@ -2,6 +2,7 @@
 #include "CStringExtras.hpp"
 #include "CDvdFile.hpp"
 #include "CDvdRequest.hpp"
+#include "CBasics.hpp"
 #include "Audio/CAudioSys.hpp"
 #include "amuse/DSPCodec.hpp"
 #include <memory>
@@ -153,10 +154,10 @@ struct SDSPStream : boo::IAudioVoiceCallback {
   unsigned decompressChunk(unsigned readToSample, int16_t*& data) {
     unsigned startSamp = m_curSample;
 
-    auto sampDiv = std::div(int(m_curSample), int(14));
+    auto sampDiv = urde::div(m_curSample, unsigned(14));
     if (sampDiv.rem) {
       unsigned samps = DSPDecompressFrameRanged(data, xd4_ringBuffer.get() + sampDiv.quot * 8, x10_info.x1c_coef,
-                                                &m_prev1, &m_prev2, unsigned(sampDiv.rem), readToSample - m_curSample);
+                                                &m_prev1, &m_prev2, sampDiv.rem, readToSample - m_curSample);
       m_curSample += samps;
       data += samps;
       ++sampDiv.quot;

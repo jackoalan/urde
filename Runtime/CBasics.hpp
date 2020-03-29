@@ -41,4 +41,10 @@ public:
   static OSCalendarTime ToCalendarTime(std::chrono::system_clock::time_point time);
 };
 
+template <typename T>
+constexpr auto div(T a, T b) {
+  struct DivTp { T quot, rem; };
+  return DivTp{a / b, a % b};
+}
+
 } // namespace urde

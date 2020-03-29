@@ -236,8 +236,8 @@ ResExtractor<PAKBridge> PAKBridge::LookupExtractor(const nod::Node& pakNode, con
     return {SAVWCommon::ExtractSAVW<SAVW>, {_SYS_STR(".yaml")}};
   case SBIG('HINT'):
     return {HINT::Extract, {_SYS_STR(".yaml")}};
-//  case SBIG('CMDL'):
-//    return {CMDL::Extract, {_SYS_STR(".blend")}, 1};
+  case SBIG('CMDL'):
+    return {CMDL::Extract, {_SYS_STR(".blend")}, 1};
 //  case SBIG('CHAR'):
 //    return {CHAR::Extract, {_SYS_STR(".yaml"), _SYS_STR(".blend")}, 2};
 //  case SBIG('MLVL'):
